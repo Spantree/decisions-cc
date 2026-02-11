@@ -7,6 +7,7 @@ import { criteria, tools, scores } from './data';
 export default function App() {
   const [isDark, setIsDark] = useState(false);
   const [selectedHighlight, setSelectedHighlight] = useState<string>('');
+  const [showWinner, setShowWinner] = useState(false);
 
   return (
     <div className={`demo-page ${isDark ? 'demo-dark' : ''}`}>
@@ -96,6 +97,31 @@ export default function App() {
           tools={tools}
           scores={scores}
           highlight={selectedHighlight || undefined}
+          isDark={isDark}
+        />
+      </section>
+
+      {/* Section 5: Winner highlight toggle */}
+      <section className="demo-section">
+        <h2>5. Show Winner</h2>
+        <p>
+          The <code>showWinner</code> prop highlights the column with the highest
+          weighted total in gold with a 👑 crown. Toggle it on and adjust weights
+          to see the winner change dynamically.
+        </p>
+        <label className="demo-toggle" style={{ marginBottom: '0.75rem' }}>
+          <input
+            type="checkbox"
+            checked={showWinner}
+            onChange={(e) => setShowWinner(e.target.checked)}
+          />
+          showWinner
+        </label>
+        <PughMatrix
+          criteria={criteria}
+          tools={tools}
+          scores={scores}
+          showWinner={showWinner}
           isDark={isDark}
         />
       </section>

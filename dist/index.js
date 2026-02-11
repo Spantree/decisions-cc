@@ -46,6 +46,7 @@ function PughMatrix({
   tools,
   scores,
   highlight,
+  showWinner = false,
   isDark = false
 }) {
   const [weights, setWeights] = (0, import_react.useState)(
@@ -81,6 +82,18 @@ function PughMatrix({
     }
   };
   const isHighlighted = (tool) => highlight && tool === highlight;
+  const winner = (0, import_react.useMemo)(() => {
+    if (!showWinner) return null;
+    let best = "";
+    for (const tool of tools) {
+      if (weightedTotals[tool] === maxTotal) {
+        best = tool;
+        break;
+      }
+    }
+    return best;
+  }, [showWinner, tools, weightedTotals, maxTotal]);
+  const isWinner = (tool) => winner && tool === winner;
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: `pugh-container${isDark ? " pugh-dark" : ""}`, children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("table", { className: "pugh-table", children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("thead", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", { children: [
@@ -89,8 +102,8 @@ function PughMatrix({
         tools.map((tool) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
           "th",
           {
-            className: `pugh-tool-header${isHighlighted(tool) ? " pugh-highlight-header" : ""}`,
-            children: tool
+            className: `pugh-tool-header${isWinner(tool) ? " pugh-winner-header" : isHighlighted(tool) ? " pugh-highlight-header" : ""}`,
+            children: isWinner(tool) ? `\u{1F451} ${tool}` : tool
           },
           tool
         ))
@@ -117,7 +130,7 @@ function PughMatrix({
             return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
               "td",
               {
-                className: `pugh-score-cell${isHighlighted(tool) ? " pugh-highlight-cell" : ""}`,
+                className: `pugh-score-cell${isWinner(tool) ? " pugh-winner-cell" : isHighlighted(tool) ? " pugh-highlight-cell" : ""}`,
                 style: {
                   backgroundColor: colors.bg,
                   color: colors.text
@@ -143,7 +156,7 @@ function PughMatrix({
             return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
               "td",
               {
-                className: `pugh-total-cell${isHighlighted(tool) ? " pugh-highlight-cell" : ""}`,
+                className: `pugh-total-cell${isWinner(tool) ? " pugh-winner-cell" : isHighlighted(tool) ? " pugh-highlight-cell" : ""}`,
                 style: {
                   backgroundColor: colors.bg,
                   color: colors.text

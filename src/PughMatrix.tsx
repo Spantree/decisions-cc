@@ -7,6 +7,7 @@ export interface PughMatrixProps {
   tools: string[];
   scores: Record<string, Record<string, ScoreEntry>>;
   highlight?: string;
+  showWinner?: boolean;
   isDark?: boolean;
 }
 
@@ -33,6 +34,7 @@ export default function PughMatrix({
   tools,
   scores,
   highlight,
+  showWinner = false,
   isDark = false,
 }: PughMatrixProps) {
   const [weights, setWeights] = useState<Record<string, number>>(() =>
@@ -74,6 +76,20 @@ export default function PughMatrix({
 
   const isHighlighted = (tool: string) => highlight && tool === highlight;
 
+  const winner = useMemo(() => {
+    if (!showWinner) return null;
+    let best = '';
+    for (const tool of tools) {
+      if (weightedTotals[tool] === maxTotal) {
+        best = tool;
+        break;
+      }
+    }
+    return best;
+  }, [showWinner, tools, weightedTotals, maxTotal]);
+
+  const isWinner = (tool: string) => winner && tool === winner;
+
   return (
     <div className={`pugh-container${isDark ? ' pugh-dark' : ''}`}>
       <table className="pugh-table">
@@ -84,9 +100,9 @@ export default function PughMatrix({
             {tools.map((tool) => (
               <th
                 key={tool}
-                className={`pugh-tool-header${isHighlighted(tool) ? ' pugh-highlight-header' : ''}`}
+                className={`pugh-tool-header${isWinner(tool) ? ' pugh-winner-header' : isHighlighted(tool) ? ' pugh-highlight-header' : ''}`}
               >
-                {tool}
+                {isWinner(tool) ? `👑 ${tool}` : tool}
               </th>
             ))}
           </tr>
@@ -113,7 +129,7 @@ export default function PughMatrix({
                 return (
                   <td
                     key={tool}
-                    className={`pugh-score-cell${isHighlighted(tool) ? ' pugh-highlight-cell' : ''}`}
+                    className={`pugh-score-cell${isWinner(tool) ? ' pugh-winner-cell' : isHighlighted(tool) ? ' pugh-highlight-cell' : ''}`}
                     style={{
                       backgroundColor: colors.bg,
                       color: colors.text,
@@ -141,7 +157,7 @@ export default function PughMatrix({
                 return (
                   <td
                     key={tool}
-                    className={`pugh-total-cell${isHighlighted(tool) ? ' pugh-highlight-cell' : ''}`}
+                    className={`pugh-total-cell${isWinner(tool) ? ' pugh-winner-cell' : isHighlighted(tool) ? ' pugh-highlight-cell' : ''}`}
                     style={{
                       backgroundColor: colors.bg,
                       color: colors.text,

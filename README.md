@@ -58,6 +58,7 @@ function App() {
 | `tools` | `string[]` | yes | Column labels (options being compared) |
 | `scores` | `Record<string, Record<string, ScoreEntry>>` | yes | Nested map: `scores[tool][criterion]` |
 | `highlight` | `string` | no | Tool name to visually highlight a column |
+| `showWinner` | `boolean` | no | Highlight the highest weighted-total column in gold with a crown (default `false`) |
 | `isDark` | `boolean` | no | Enable dark mode styling (default `false`) |
 
 ### ScoreEntry
@@ -193,6 +194,7 @@ Then open http://localhost:5173. The demo includes:
 1. **Basic usage** — no highlight, default rendering
 2. **Static highlight** — `highlight="Vue"` and `highlight="Svelte"` on separate matrices
 3. **Interactive toggle** — buttons to switch the highlighted column or remove it entirely
+4. **Show winner** — toggle `showWinner` to crown the highest weighted-total column in gold
 
 The demo also has a global dark mode toggle. All demo files live in `demo/` and are excluded from the published package.
 
