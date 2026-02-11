@@ -70,7 +70,26 @@ interface ScoreEntry {
 }
 ```
 
-Multiple entries per (tool, criterion) pair are allowed. The component displays the entry with the latest `timestamp` and shows all entries in a hover tooltip sorted newest-first.
+Multiple entries per (tool, criterion) pair are allowed — this is how score history works. The component displays the entry with the latest `timestamp` and shows all entries in a hover tooltip sorted newest-first.
+
+### Score history
+
+Add multiple entries for the same cell to track revisions over time:
+
+```ts
+const scores = [
+  // Original score
+  { id: 'a1', tool: 'React', criterion: 'Cost', score: 9, label: 'Free', timestamp: 1707600000000 },
+  // Revised score — this one displays because it has a later timestamp
+  { id: 'a2', tool: 'React', criterion: 'Cost', score: 7, label: 'Revised', comment: 'Hidden infra costs', timestamp: 1707686400000 },
+];
+```
+
+The cell shows `7 / Revised`. Hovering reveals both entries with dates and comments.
+
+### Validation
+
+Each score entry's `tool` and `criterion` must match a value in the `tools` and `criteria` arrays. The component throws an error if any entry references an unrecognized tool or criterion, listing the allowed values in the error message.
 
 ## Features
 

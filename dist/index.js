@@ -63,9 +63,16 @@ function PughMatrix({
   const [editLabel, setEditLabel] = (0, import_react.useState)("");
   const [editComment, setEditComment] = (0, import_react.useState)("");
   const { latestByCell, historyByCell, weightedTotals, maxTotal, winner } = (0, import_react.useMemo)(() => {
+    const toolSet = new Set(tools);
+    const criterionSet = new Set(criteria);
     const history = /* @__PURE__ */ new Map();
     const latest = /* @__PURE__ */ new Map();
     for (const entry of scores) {
+      if (!toolSet.has(entry.tool) || !criterionSet.has(entry.criterion)) {
+        throw new Error(
+          `PughMatrix: score entry "${entry.id}" references invalid tool "${entry.tool}" or criterion "${entry.criterion}". Allowed tools: [${tools.join(", ")}]. Allowed criteria: [${criteria.join(", ")}].`
+        );
+      }
       const key = `${entry.tool}\0${entry.criterion}`;
       const arr = history.get(key) ?? [];
       arr.push(entry);

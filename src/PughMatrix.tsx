@@ -69,10 +69,18 @@ export default function PughMatrix({
 
   const { latestByCell, historyByCell, weightedTotals, maxTotal, winner } =
     useMemo(() => {
+      const toolSet = new Set(tools);
+      const criterionSet = new Set(criteria);
       const history = new Map<string, ScoreEntry[]>();
       const latest = new Map<string, ScoreEntry>();
 
       for (const entry of scores) {
+        if (!toolSet.has(entry.tool) || !criterionSet.has(entry.criterion)) {
+          throw new Error(
+            `PughMatrix: score entry "${entry.id}" references invalid tool "${entry.tool}" or criterion "${entry.criterion}". ` +
+            `Allowed tools: [${tools.join(', ')}]. Allowed criteria: [${criteria.join(', ')}].`,
+          );
+        }
         const key = `${entry.tool}\0${entry.criterion}`;
         const arr = history.get(key) ?? [];
         arr.push(entry);
