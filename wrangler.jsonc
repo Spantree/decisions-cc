@@ -1,0 +1,4 @@
+{
+  "name": "decisionapp",
+  "pages_build_output_dir": "storybook-static"
+}
