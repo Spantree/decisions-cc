@@ -1,4 +1,14 @@
 import type { Preview } from '@storybook/react-vite'
+import { create } from 'storybook/theming/create';
+
+const docsTheme = create({
+  base: 'light',
+  colorPrimary: '#2e8555',
+  colorSecondary: '#2e8555',
+  textColor: '#1c1e21',
+  appBg: '#f8f9fa',
+  appContentBg: '#ffffff',
+});
 
 const preview: Preview = {
   parameters: {
@@ -7,6 +17,10 @@ const preview: Preview = {
        color: /(background|color)$/i,
        date: /Date$/i,
       },
+    },
+
+    docs: {
+      theme: docsTheme,
     },
 
     a11y: {
