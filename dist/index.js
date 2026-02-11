@@ -38,26 +38,54 @@ function getScoreColor(score, isDark) {
   scoreColorCache.set(key, result);
   return result;
 }
+function formatDate(timestamp) {
+  return new Date(timestamp).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+}
 function PughMatrix({
   criteria,
   tools,
   scores,
   highlight,
   showWinner = false,
-  isDark = false
+  isDark = false,
+  onScoreAdd
 }) {
   const [weights, setWeights] = (0, import_react.useState)(
     () => Object.fromEntries(criteria.map((c) => [c, 10]))
   );
   const [showTotals, setShowTotals] = (0, import_react.useState)(false);
-  const { weightedTotals, maxTotal, winner } = (0, import_react.useMemo)(() => {
+  const [editingCell, setEditingCell] = (0, import_react.useState)(null);
+  const [editScore, setEditScore] = (0, import_react.useState)("");
+  const [editLabel, setEditLabel] = (0, import_react.useState)("");
+  const [editComment, setEditComment] = (0, import_react.useState)("");
+  const { latestByCell, historyByCell, weightedTotals, maxTotal, winner } = (0, import_react.useMemo)(() => {
+    const history = /* @__PURE__ */ new Map();
+    const latest = /* @__PURE__ */ new Map();
+    for (const entry of scores) {
+      const key = `${entry.tool}\0${entry.criterion}`;
+      const arr = history.get(key) ?? [];
+      arr.push(entry);
+      history.set(key, arr);
+      const prev = latest.get(key);
+      if (!prev || entry.timestamp > prev.timestamp) {
+        latest.set(key, entry);
+      }
+    }
+    for (const [key, arr] of history.entries()) {
+      history.set(key, arr.toSorted((a, b) => b.timestamp - a.timestamp));
+    }
     const totals = {};
     let max = -Infinity;
     let best = "";
     for (const tool of tools) {
       let total = 0;
       for (const criterion of criteria) {
-        const entry = scores[tool]?.[criterion];
+        const key = `${tool}\0${criterion}`;
+        const entry = latest.get(key);
         const score = entry?.score ?? 0;
         const weight = weights[criterion] ?? 10;
         total += score * weight;
@@ -70,11 +98,13 @@ function PughMatrix({
       }
     }
     return {
+      latestByCell: latest,
+      historyByCell: history,
       weightedTotals: totals,
       maxTotal: max,
       winner: showWinner ? best : null
     };
-  }, [criteria, tools, scores, weights, showWinner]);
+  }, [scores, tools, criteria, weights, showWinner]);
   const handleWeightChange = (criterion, value) => {
     if (value === "") {
       setWeights((prev) => ({ ...prev, [criterion]: 0 }));
@@ -85,8 +115,51 @@ function PughMatrix({
       setWeights((prev) => ({ ...prev, [criterion]: num }));
     }
   };
+  const handleCellClick = (tool, criterion) => {
+    if (!onScoreAdd) return;
+    setEditingCell({ tool, criterion });
+    setEditScore("");
+    setEditLabel("");
+    setEditComment("");
+  };
+  const handleEditScoreChange = (value) => {
+    if (value === "") {
+      setEditScore("");
+      return;
+    }
+    const num = Math.round(Number(value));
+    if (!isNaN(num) && num >= 1 && num <= 10) {
+      setEditScore(String(num));
+    }
+  };
+  const handleEditSave = () => {
+    if (!editingCell || !onScoreAdd) return;
+    const scoreNum = Number(editScore);
+    if (isNaN(scoreNum) || scoreNum < 1 || scoreNum > 10) return;
+    if (!editLabel.trim()) return;
+    onScoreAdd({
+      tool: editingCell.tool,
+      criterion: editingCell.criterion,
+      score: scoreNum,
+      label: editLabel.trim(),
+      comment: editComment.trim() || void 0
+    });
+    setEditingCell(null);
+  };
+  const handleEditCancel = () => {
+    setEditingCell(null);
+  };
+  const handleEditKeyDown = (e) => {
+    if (e.key === "Escape") {
+      handleEditCancel();
+    } else if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleEditSave();
+    }
+  };
   const isHighlighted = (tool) => highlight && tool === highlight;
   const isWinner = (tool) => winner && tool === winner;
+  const isEditing = (tool, criterion) => editingCell?.tool === tool && editingCell?.criterion === criterion;
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: `pugh-container${isDark ? " pugh-dark" : ""}`, children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("table", { className: "pugh-table", children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("thead", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("tr", { children: [
@@ -116,22 +189,88 @@ function PughMatrix({
             }
           ) }),
           tools.map((tool) => {
-            const entry = scores[tool]?.[criterion];
+            const cellKey = `${tool}\0${criterion}`;
+            const entry = latestByCell.get(cellKey);
             const score = entry?.score ?? 0;
             const label = entry?.label ?? "";
             const colors = getScoreColor(score, isDark);
-            return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+            const history = historyByCell.get(cellKey);
+            const editing = isEditing(tool, criterion);
+            return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
               "td",
               {
-                className: `pugh-score-cell${isWinner(tool) ? " pugh-winner-cell" : isHighlighted(tool) ? " pugh-highlight-cell" : ""}`,
+                className: `pugh-score-cell${onScoreAdd ? " pugh-score-cell-editable" : ""}${isWinner(tool) ? " pugh-winner-cell" : isHighlighted(tool) ? " pugh-highlight-cell" : ""}`,
                 style: {
                   backgroundColor: colors.bg,
                   color: colors.text
                 },
-                children: [
+                onClick: () => handleCellClick(tool, criterion),
+                children: editing ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                  "div",
+                  {
+                    className: "pugh-edit-form",
+                    onClick: (e) => e.stopPropagation(),
+                    children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                        "input",
+                        {
+                          type: "text",
+                          inputMode: "numeric",
+                          pattern: "[0-9]*",
+                          placeholder: "Score (1-10)",
+                          value: editScore,
+                          onChange: (e) => handleEditScoreChange(e.target.value),
+                          onKeyDown: handleEditKeyDown,
+                          className: "pugh-edit-input",
+                          autoFocus: true
+                        }
+                      ),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                        "input",
+                        {
+                          type: "text",
+                          placeholder: "Label",
+                          value: editLabel,
+                          onChange: (e) => setEditLabel(e.target.value),
+                          onKeyDown: handleEditKeyDown,
+                          className: "pugh-edit-input",
+                          maxLength: 30
+                        }
+                      ),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                        "textarea",
+                        {
+                          placeholder: "Comment (optional)",
+                          value: editComment,
+                          onChange: (e) => setEditComment(e.target.value),
+                          onKeyDown: handleEditKeyDown,
+                          className: "pugh-edit-comment",
+                          rows: 2
+                        }
+                      ),
+                      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "pugh-edit-actions", children: [
+                        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", onClick: handleEditSave, children: "Save" }),
+                        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", onClick: handleEditCancel, children: "Cancel" })
+                      ] })
+                    ]
+                  }
+                ) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
                   /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "pugh-score-number", children: score }),
-                  label && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "pugh-score-label", children: label })
-                ]
+                  label ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "pugh-score-label", children: label }) : null,
+                  history && history.length > 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "pugh-history-tooltip", children: history.map((h) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "pugh-history-entry", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "pugh-history-score", children: [
+                      h.score,
+                      " \u2014 ",
+                      h.label
+                    ] }),
+                    h.comment ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "pugh-history-comment", children: [
+                      "\u201C",
+                      h.comment,
+                      "\u201D"
+                    ] }) : null,
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "pugh-history-date", children: formatDate(h.timestamp) })
+                  ] }, h.id)) }) : null
+                ] })
               },
               tool
             );

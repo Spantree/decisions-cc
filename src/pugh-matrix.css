@@ -79,6 +79,119 @@
   transition: background-color 0.15s ease;
   min-width: 90px;
   vertical-align: middle;
+  position: relative;
+}
+
+.pugh-score-cell-editable {
+  cursor: pointer;
+}
+
+/* History tooltip */
+.pugh-history-tooltip {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  min-width: 200px;
+  max-width: 280px;
+  padding: 0.5rem;
+  border-radius: 6px;
+  background: var(--pugh-head-bg);
+  color: var(--pugh-head-text);
+  border: 1px solid var(--pugh-border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  text-align: left;
+  font-size: 0.78rem;
+  pointer-events: none;
+}
+
+.pugh-score-cell:hover > .pugh-history-tooltip {
+  display: block;
+}
+
+.pugh-history-entry {
+  padding: 0.35rem 0;
+}
+
+.pugh-history-entry + .pugh-history-entry {
+  border-top: 1px solid var(--pugh-border-color);
+}
+
+.pugh-history-score {
+  font-weight: 600;
+}
+
+.pugh-history-comment {
+  font-style: italic;
+  opacity: 0.8;
+  margin-top: 0.1rem;
+}
+
+.pugh-history-date {
+  font-size: 0.7rem;
+  opacity: 0.6;
+  margin-top: 0.1rem;
+}
+
+/* Edit form */
+.pugh-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.25rem;
+}
+
+.pugh-edit-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.25rem 0.35rem;
+  font-size: 0.8rem;
+  border: 1px solid var(--pugh-border-color);
+  border-radius: 4px;
+  background: var(--pugh-bg);
+  color: var(--pugh-text);
+}
+
+.pugh-edit-input:focus,
+.pugh-edit-comment:focus {
+  outline: 2px solid var(--pugh-primary);
+  outline-offset: -1px;
+}
+
+.pugh-edit-comment {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.25rem 0.35rem;
+  font-size: 0.78rem;
+  border: 1px solid var(--pugh-border-color);
+  border-radius: 4px;
+  background: var(--pugh-bg);
+  color: var(--pugh-text);
+  resize: vertical;
+  font-family: inherit;
+}
+
+.pugh-edit-actions {
+  display: flex;
+  gap: 0.3rem;
+  justify-content: flex-end;
+}
+
+.pugh-edit-actions button {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--pugh-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  background: var(--pugh-primary);
+  color: #fff;
+}
+
+.pugh-edit-actions button:last-child {
+  background: transparent;
+  color: var(--pugh-primary);
 }
 
 .pugh-score-number {

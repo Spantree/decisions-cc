@@ -27,23 +27,17 @@ import 'decisionapp/styles.css';
 
 const criteria = ['Cost', 'Speed', 'Quality'];
 const tools = ['Option A', 'Option B', 'Option C'];
-const scores = {
-  'Option A': {
-    Cost: { score: 8, label: 'Low' },
-    Speed: { score: 6, label: 'Medium' },
-    Quality: { score: 9, label: 'Excellent' },
-  },
-  'Option B': {
-    Cost: { score: 5, label: 'Medium' },
-    Speed: { score: 9, label: 'Fast' },
-    Quality: { score: 7, label: 'Good' },
-  },
-  'Option C': {
-    Cost: { score: 3, label: 'High' },
-    Speed: { score: 4, label: 'Slow' },
-    Quality: { score: 10, label: 'Best' },
-  },
-};
+const scores = [
+  { id: '1', tool: 'Option A', criterion: 'Cost', score: 8, label: 'Low', timestamp: Date.now() },
+  { id: '2', tool: 'Option A', criterion: 'Speed', score: 6, label: 'Medium', timestamp: Date.now() },
+  { id: '3', tool: 'Option A', criterion: 'Quality', score: 9, label: 'Excellent', timestamp: Date.now() },
+  { id: '4', tool: 'Option B', criterion: 'Cost', score: 5, label: 'Medium', timestamp: Date.now() },
+  { id: '5', tool: 'Option B', criterion: 'Speed', score: 9, label: 'Fast', timestamp: Date.now() },
+  { id: '6', tool: 'Option B', criterion: 'Quality', score: 7, label: 'Good', timestamp: Date.now() },
+  { id: '7', tool: 'Option C', criterion: 'Cost', score: 3, label: 'High', timestamp: Date.now() },
+  { id: '8', tool: 'Option C', criterion: 'Speed', score: 4, label: 'Slow', timestamp: Date.now() },
+  { id: '9', tool: 'Option C', criterion: 'Quality', score: 10, label: 'Best', timestamp: Date.now() },
+];
 
 function App() {
   return <PughMatrix criteria={criteria} tools={tools} scores={scores} />;
@@ -56,19 +50,27 @@ function App() {
 | --- | --- | --- | --- |
 | `criteria` | `string[]` | yes | Row labels (evaluation criteria) |
 | `tools` | `string[]` | yes | Column labels (options being compared) |
-| `scores` | `Record<string, Record<string, ScoreEntry>>` | yes | Nested map: `scores[tool][criterion]` |
+| `scores` | `ScoreEntry[]` | yes | Flat array of score entries (latest timestamp wins per cell) |
 | `highlight` | `string` | no | Tool name to visually highlight a column |
 | `showWinner` | `boolean` | no | Highlight the highest weighted-total column in gold with a crown (default `false`) |
 | `isDark` | `boolean` | no | Enable dark mode styling (default `false`) |
+| `onScoreAdd` | `(entry) => void` | no | Callback when adding a new score. Receives `{ tool, criterion, score, label, comment? }`. If omitted, cells are read-only. |
 
 ### ScoreEntry
 
 ```ts
 interface ScoreEntry {
-  score: number; // 1–10
-  label: string; // descriptive text shown below the score
+  id: string;           // unique identifier
+  tool: string;         // column (option being scored)
+  criterion: string;    // row (evaluation criterion)
+  score: number;        // 1–10
+  label: string;        // descriptive text shown below the score
+  comment?: string;     // optional comment for this score revision
+  timestamp: number;    // epoch ms — used for ordering (latest wins)
 }
 ```
+
+Multiple entries per (tool, criterion) pair are allowed. The component displays the entry with the latest `timestamp` and shows all entries in a hover tooltip sorted newest-first.
 
 ## Features
 
@@ -77,6 +79,8 @@ interface ScoreEntry {
 - **Column highlighting** — pass `highlight="Option B"` to call out a specific column with a primary-color border
 - **Collapsible totals row** — weighted totals are hidden by default; toggle with the button below the table
 - **Dark mode** — pass `isDark={true}` or detect it from your app's theme system
+- **Score history** — multiple entries per cell; hover to see all revisions in a tooltip (latest timestamp wins)
+- **Inline editing** — pass `onScoreAdd` to let users click a cell and add a new score + label + comment
 
 ## Dark mode
 
