@@ -212,6 +212,9 @@
   background: var(--pugh-primary) !important;
   color: #fff !important;
 }
+.pugh-dark .pugh-highlight-header {
+  color: #1c1e21 !important;
+}
 
 .pugh-highlight-cell {
   border-left: 2.5px solid var(--pugh-primary) !important;
