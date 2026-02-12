@@ -22,6 +22,8 @@ Peer dependencies — bring your own:
 - `react-dom` 18+
 - `@radix-ui/themes` 3+
 
+`zustand` is a regular dependency and is installed automatically.
+
 ## Quick start
 
 ```tsx
@@ -97,6 +99,99 @@ The cell shows `7 / Revised`. Hovering reveals both entries with dates and comme
 ### Validation
 
 Each score entry's `tool` and `criterion` must match a value in the `tools` and `criteria` arrays. The component throws an error if any entry references an unrecognized tool or criterion, listing the allowed values in the error message.
+
+## Store mode (Zustand)
+
+For apps that want built-in state management instead of lifting state yourself, PughMatrix supports a **store mode** powered by Zustand. Wrap the component in a `PughStoreProvider` and omit the data props — all state lives in the store.
+
+### In-memory store
+
+```tsx
+import { PughMatrix, createPughStore, PughStoreProvider } from 'decisionapp';
+import 'decisionapp/styles.css';
+
+const store = createPughStore({
+  criteria: ['Cost', 'Speed', 'Quality'],
+  tools: ['Option A', 'Option B'],
+  scores: [
+    { id: '1', tool: 'Option A', criterion: 'Cost', score: 8, label: 'Low', timestamp: Date.now() },
+  ],
+});
+
+function App() {
+  return (
+    <PughStoreProvider store={store}>
+      <PughMatrix />
+    </PughStoreProvider>
+  );
+}
+```
+
+In store mode, cells are always editable — scores are added directly to the store.
+
+### Persisted store (localStorage)
+
+```tsx
+import { createPughStore, createLocalStoragePersister, PughStoreProvider, PughMatrix } from 'decisionapp';
+
+const store = createPughStore({
+  criteria: ['Cost', 'Speed'],
+  tools: ['A', 'B'],
+  persistKey: 'my-matrix',
+  persister: createLocalStoragePersister(),
+});
+
+function App() {
+  return (
+    <PughStoreProvider store={store}>
+      <PughMatrix />
+    </PughStoreProvider>
+  );
+}
+```
+
+Data survives page reloads. The built-in localStorage persister also listens for `storage` events, so changes sync across browser tabs.
+
+### Custom persisters
+
+Implement the `Persister` interface to store data anywhere (IndexedDB, Supabase, a REST API, etc.):
+
+```ts
+import type { Persister } from 'decisionapp';
+
+const myPersister: Persister = {
+  load: (key) => fetchFromMyBackend(key),
+  save: (key, value) => postToMyBackend(key, value),
+  remove: (key) => deleteFromMyBackend(key),
+  subscribe: (key, cb) => {
+    // Optional: real-time sync
+    const unsub = myRealtimeClient.on(key, (val) => cb(val));
+    return unsub;
+  },
+};
+```
+
+### Reading/writing store state from outside React
+
+The store returned by `createPughStore` is a vanilla Zustand store. You can read and mutate it outside of React:
+
+```ts
+const store = createPughStore({ criteria: ['Cost'], tools: ['A'] });
+
+// Read
+console.log(store.getState().scores);
+
+// Write
+store.getState().addScore({ id: '1', tool: 'A', criterion: 'Cost', score: 8, label: 'Low', timestamp: Date.now() });
+```
+
+### Dual-mode: controlled vs. store
+
+PughMatrix auto-detects its mode:
+- **Controlled mode** (backward-compatible): pass `criteria`, `tools`, and `scores` props directly.
+- **Store mode**: omit data props and wrap in `<PughStoreProvider>`.
+
+Passing data props always takes precedence, so existing code works unchanged.
 
 ## Features
 
@@ -216,6 +311,49 @@ The highlighted column gets a primary-color header and bordered cells.
 npm install
 npm run build   # outputs dist/ with CJS, ESM, types, and CSS
 ```
+
+## Architecture & design decisions
+
+### Dual-mode component (controlled vs. store)
+
+The `PughMatrix` component supports two modes rather than forcing a migration:
+
+- **Controlled mode** preserves the original API (`criteria`/`tools`/`scores` props + `useState` internally). Existing consumers don't need to change anything.
+- **Store mode** activates when the component finds a `PughStoreProvider` in context and no data props are passed. This lets new consumers opt into Zustand without the old API being removed.
+
+Internally, both modes feed the same `PughMatrixView` rendering component, which is a pure function of resolved data + callbacks. This avoids duplicating the table rendering logic.
+
+### Zustand over alternatives
+
+Zustand was chosen because it's tiny (~1 KB), has no boilerplate, works with vanilla JS (not just React), and its `persist` middleware provides exactly the hook points we need. The store is created with `createStore` (vanilla) rather than the React-only `create`, so it can be used outside React (tests, SSR, CLI tools).
+
+### Persister interface (adapter pattern)
+
+Instead of coupling to `localStorage` or any specific backend, the store accepts a `Persister` — a four-method interface (`load`, `save`, `remove`, `subscribe?`). This enables an **open-core model**:
+
+- The core library ships with `createLocalStoragePersister()` (MIT, zero backend assumptions).
+- Additional adapters (`persist-indexeddb`, `persist-supabase`, etc.) can be built and shipped separately by anyone implementing the `Persister` interface.
+
+The `subscribe` method is optional. When present, the store calls `persister.subscribe(key, cb)` and triggers `rehydrate()` on changes — enabling cross-tab sync (localStorage `storage` events) or real-time sync (WebSocket/Supabase realtime).
+
+### Domain vs. UI state partitioning
+
+The store separates state into two categories:
+
+- **Domain state** (`PughDomainState`): `criteria`, `tools`, `scores`, `weights` — this is what gets persisted.
+- **UI state** (`PughUIState`): `showTotals`, `editingCell`, `editScore`, `editLabel`, `editComment` — ephemeral, never persisted.
+
+Zustand's `partialize` option in the `persist` middleware handles this cleanly: only domain state is serialized. This means opening a persisted matrix doesn't restore stale editing state.
+
+### Factory function, not a singleton
+
+`createPughStore()` is a factory that returns a new store instance each time. This supports:
+
+- Multiple independent matrices on the same page (each with its own store)
+- SSR safety (no module-level singletons that leak between requests)
+- Testing (create a fresh store per test)
+
+The store instance is injected via React context (`PughStoreProvider`), not imported as a global.
 
 ## License
 

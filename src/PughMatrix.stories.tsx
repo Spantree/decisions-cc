@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { fn, within, userEvent } from 'storybook/test';
 import PughMatrix from './PughMatrix';
+import { createPughStore } from './store/createPughStore';
+import { PughStoreProvider } from './store/PughStoreProvider';
+import { createLocalStoragePersister } from './persist/localStoragePersister';
 import './pugh-matrix.css';
 import type { ScoreEntry } from './types';
 
@@ -234,5 +237,62 @@ export const EditableActionOnly: Story = {
   args: {
     scores: scoresWithHistory,
     onScoreAdd: fn(),
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/*  Store-mode stories                                                */
+/* ------------------------------------------------------------------ */
+
+const PERSIST_KEY = 'pugh-storybook-demo';
+
+/**
+ * Store mode with localStorage persistence — edits survive page reloads.
+ * Click any cell to add a score. Use "Clear saved data" to reset to defaults.
+ * Writes to localStorage key "pugh-storybook-demo".
+ */
+export const StoreWithLocalStorage: Story = {
+  argTypes: {
+    criteria: { table: { disable: true } },
+    tools: { table: { disable: true } },
+    scores: { table: { disable: true } },
+  },
+  render: (args) => {
+    const [resetKey, setResetKey] = useState(0);
+    const store = useMemo(
+      () =>
+        createPughStore({
+          criteria,
+          tools,
+          scores: scoresWithHistory,
+          persistKey: PERSIST_KEY,
+          persister: createLocalStoragePersister(),
+        }),
+      [resetKey],
+    );
+    const handleClear = () => {
+      try { localStorage.removeItem(PERSIST_KEY); } catch {}
+      setResetKey((k) => k + 1);
+    };
+    return (
+      <div>
+        <div style={{ marginBottom: 8 }}>
+          <button
+            type="button"
+            onClick={handleClear}
+            style={{ fontSize: 13, cursor: 'pointer', padding: '4px 10px' }}
+          >
+            Clear saved data
+          </button>
+        </div>
+        <PughStoreProvider store={store}>
+          <PughMatrix
+            highlight={args.highlight}
+            showWinner={args.showWinner}
+            isDark={args.isDark}
+          />
+        </PughStoreProvider>
+      </div>
+    );
   },
 };
