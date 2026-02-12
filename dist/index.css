@@ -9,6 +9,7 @@
   overflow-x: auto;
   margin: 1.5rem 0;
   color: var(--pugh-text);
+  background-color: var(--pugh-bg);
 }
 .pugh-container.pugh-dark {
   --pugh-border-color: #444;
