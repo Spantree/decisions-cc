@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { fn } from 'storybook/test';
+import { fn, within, userEvent } from 'storybook/test';
 import PughMatrix from './PughMatrix';
 import './pugh-matrix.css';
 import type { ScoreEntry } from './types';
@@ -95,6 +95,15 @@ type Story = StoryObj<typeof PughMatrix>;
 
 /** Default rendering with no highlight or winner. */
 export const Default: Story = {};
+
+/** Default with the weighted totals row visible. */
+export const WithTotals: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const button = canvas.getByRole('button', { name: /show totals/i });
+    await userEvent.click(button);
+  },
+};
 
 /** A single column highlighted with the `highlight` prop. */
 export const HighlightVue: Story = {
