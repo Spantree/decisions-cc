@@ -20,38 +20,9 @@
   --pugh-primary: #4caf7d;
 }
 
-.pugh-table {
-  border-collapse: collapse;
-  width: 100%;
-  font-size: 0.875rem;
-}
-
-.pugh-table th,
-.pugh-table td {
-  border: 1px solid var(--pugh-border-color);
-  padding: 0.5rem 0.6rem;
-  text-align: center;
-  background: var(--pugh-bg);
-}
-
-.pugh-table thead th {
-  background: var(--pugh-head-bg);
-  color: var(--pugh-head-text);
-  font-weight: 700;
-}
-
-.pugh-criterion-header,
-.pugh-criterion-cell {
-  text-align: left;
-  white-space: nowrap;
-}
-
 .pugh-criterion-cell {
   font-weight: 600;
-}
-
-.pugh-weight-header {
-  width: 72px;
+  white-space: nowrap;
 }
 
 .pugh-weight-cell {

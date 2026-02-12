@@ -18,33 +18,9 @@
   --pugh-text: #e3e3e3;
   --pugh-primary: #4caf7d;
 }
-.pugh-table {
-  border-collapse: collapse;
-  width: 100%;
-  font-size: 0.875rem;
-}
-.pugh-table th,
-.pugh-table td {
-  border: 1px solid var(--pugh-border-color);
-  padding: 0.5rem 0.6rem;
-  text-align: center;
-  background: var(--pugh-bg);
-}
-.pugh-table thead th {
-  background: var(--pugh-head-bg);
-  color: var(--pugh-head-text);
-  font-weight: 700;
-}
-.pugh-criterion-header,
-.pugh-criterion-cell {
-  text-align: left;
-  white-space: nowrap;
-}
 .pugh-criterion-cell {
   font-weight: 600;
-}
-.pugh-weight-header {
-  width: 72px;
+  white-space: nowrap;
 }
 .pugh-weight-cell {
   text-align: center;
@@ -222,6 +198,9 @@
   border-right: 2.5px solid var(--pugh-primary) !important;
   box-shadow: inset 0 0 0 1px rgba(46, 133, 85, 0.15);
 }
+.pugh-table tbody tr:last-child .pugh-highlight-cell {
+  border-bottom: 2.5px solid var(--pugh-primary) !important;
+}
 .pugh-winner-header {
   background:
     linear-gradient(
@@ -234,4 +213,7 @@
   border-left: 2.5px solid #d4a017 !important;
   border-right: 2.5px solid #d4a017 !important;
   box-shadow: inset 0 0 0 1px rgba(212, 160, 23, 0.2);
+}
+.pugh-table tbody tr:last-child .pugh-winner-cell {
+  border-bottom: 2.5px solid #d4a017 !important;
 }
