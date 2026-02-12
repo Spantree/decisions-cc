@@ -1,5 +1,4 @@
 {
   "name": "decisionapp",
-  "pages_build_output_dir": "storybook-static",
-  "build": { "command": "npm run build-storybook && npm run chromatic" }
+  "pages_build_output_dir": "storybook-static"
 }
