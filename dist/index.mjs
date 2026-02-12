@@ -158,7 +158,7 @@ function PughMatrix({
       ] }) }),
       /* @__PURE__ */ jsxs(Table.Body, { children: [
         criteria.map((criterion) => /* @__PURE__ */ jsxs(Table.Row, { children: [
-          /* @__PURE__ */ jsx(Table.RowHeaderCell, { className: "pugh-criterion-cell", children: criterion }),
+          /* @__PURE__ */ jsx(Table.RowHeaderCell, { className: "pugh-criterion-cell", children: /* @__PURE__ */ jsx(Text, { weight: "bold", highContrast: true, children: criterion }) }),
           /* @__PURE__ */ jsx(Table.Cell, { className: "pugh-weight-cell", children: /* @__PURE__ */ jsx(
             "input",
             {
@@ -268,7 +268,7 @@ function PughMatrix({
           })
         ] }, criterion)),
         showTotals && /* @__PURE__ */ jsxs(Table.Row, { className: "pugh-total-row", children: [
-          /* @__PURE__ */ jsx(Table.RowHeaderCell, { className: "pugh-total-label", children: "Weighted Total" }),
+          /* @__PURE__ */ jsx(Table.RowHeaderCell, { className: "pugh-total-label", children: /* @__PURE__ */ jsx(Text, { weight: "bold", highContrast: true, children: "Weighted Total" }) }),
           /* @__PURE__ */ jsx(Table.Cell, { className: "pugh-weight-cell" }),
           tools.map((tool) => {
             const total = weightedTotals[tool];

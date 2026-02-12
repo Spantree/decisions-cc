@@ -209,7 +209,7 @@ export default function PughMatrix({
           <Table.Body>
             {criteria.map((criterion) => (
               <Table.Row key={criterion}>
-                <Table.RowHeaderCell className="pugh-criterion-cell">{criterion}</Table.RowHeaderCell>
+                <Table.RowHeaderCell className="pugh-criterion-cell"><Text weight="bold" highContrast>{criterion}</Text></Table.RowHeaderCell>
                 <Table.Cell className="pugh-weight-cell">
                   <input
                     type="text"
@@ -328,7 +328,7 @@ export default function PughMatrix({
             ))}
             {showTotals && (
               <Table.Row className="pugh-total-row">
-                <Table.RowHeaderCell className="pugh-total-label">Weighted Total</Table.RowHeaderCell>
+                <Table.RowHeaderCell className="pugh-total-label"><Text weight="bold" highContrast>Weighted Total</Text></Table.RowHeaderCell>
                 <Table.Cell className="pugh-weight-cell" />
                 {tools.map((tool) => {
                   const total = weightedTotals[tool];
