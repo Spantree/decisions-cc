@@ -12,6 +12,11 @@
   background-color: var(--pugh-bg);
 }
 
+.pugh-container table {
+  border-collapse: separate;
+  border-spacing: 2px;
+}
+
 .pugh-container.pugh-dark {
   --pugh-border-color: #444;
   --pugh-head-bg: #363636;
@@ -55,6 +60,7 @@
   transition: background-color 0.15s ease;
   min-width: 90px;
   vertical-align: middle;
+  border-radius: 6px;
 }
 
 .pugh-score-cell-editable {
@@ -184,6 +190,7 @@
   font-weight: 700;
   font-size: 0.95rem;
   transition: background-color 0.15s ease;
+  border-radius: 6px;
 }
 
 .pugh-toggle-button {

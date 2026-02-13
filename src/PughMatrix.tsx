@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { HoverCard, Table, Theme } from '@radix-ui/themes';
 import {
-  ruby, red, tomato, amber, yellow, lime, grass, green,
+  red, tomato, amber, yellow, lime, grass, green,
   greenDark,
 } from '@radix-ui/colors';
 import type { ScoreEntry } from './types';
@@ -23,29 +23,30 @@ export interface PughMatrixProps {
   }) => void;
 }
 
-// Radix color pairs: background (step 9-11) + matched foreground (step 1-2 or 12)
+// Light mode: pastel bg (steps 5-6) + dark text (step 11)
 const SCORE_COLORS_LIGHT: Record<number, { bg: string; text: string }> = {
-  1:  { bg: ruby.ruby9,     text: ruby.ruby2 },
-  2:  { bg: red.red9,       text: red.red2 },
-  3:  { bg: tomato.tomato9, text: tomato.tomato2 },
-  4:  { bg: amber.amber9,   text: amber.amber12 },
-  5:  { bg: yellow.yellow9, text: yellow.yellow12 },
-  6:  { bg: lime.lime9,     text: lime.lime12 },
-  7:  { bg: grass.grass9,   text: grass.grass2 },
-  8:  { bg: grass.grass10,  text: grass.grass2 },
-  9:  { bg: green.green9,   text: green.green2 },
-  10: { bg: green.green11,  text: green.green2 },
+  1:  { bg: red.red5,       text: red.red11 },
+  2:  { bg: red.red6,       text: red.red11 },
+  3:  { bg: tomato.tomato5, text: tomato.tomato11 },
+  4:  { bg: amber.amber6,   text: amber.amber11 },
+  5:  { bg: yellow.yellow5, text: yellow.yellow11 },
+  6:  { bg: lime.lime5,     text: lime.lime11 },
+  7:  { bg: grass.grass5,   text: grass.grass11 },
+  8:  { bg: grass.grass6,   text: grass.grass11 },
+  9:  { bg: green.green5,   text: green.green11 },
+  10: { bg: green.green6,   text: green.green11 },
 };
 
+// Dark mode: saturated bg (step 9) + light text (steps 1-2 or 12)
 const SCORE_COLORS_DARK: Record<number, { bg: string; text: string }> = {
-  1:  { bg: ruby.ruby9,     text: ruby.ruby2 },
+  1:  { bg: red.red9,       text: red.red2 },
   2:  { bg: red.red9,       text: red.red2 },
   3:  { bg: tomato.tomato9, text: tomato.tomato2 },
   4:  { bg: amber.amber9,   text: amber.amber12 },
   5:  { bg: yellow.yellow9, text: yellow.yellow12 },
   6:  { bg: lime.lime9,     text: lime.lime12 },
   7:  { bg: grass.grass9,   text: grass.grass2 },
-  8:  { bg: grass.grass10,  text: grass.grass2 },
+  8:  { bg: grass.grass9,   text: grass.grass2 },
   9:  { bg: green.green9,   text: green.green2 },
   10: { bg: greenDark.green11, text: greenDark.green1 },
 };
