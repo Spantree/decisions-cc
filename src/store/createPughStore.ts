@@ -1,5 +1,5 @@
 import { createStore } from 'zustand/vanilla';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import type { ScoreEntry } from '../types';
 import type { Persister } from '../persist/types';
 import type { PughStore, PughDomainState } from './types';
@@ -74,21 +74,26 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
   });
 
   if (!persister) {
-    return createStore<PughStore>()(storeCreator);
+    return createStore<PughStore>()(
+      devtools(storeCreator, { name: `PughMatrix` }),
+    );
   }
 
   const store = createStore<PughStore>()(
-    persist(storeCreator, {
-      name: persistKey,
-      storage: createPughStorageAdapter(persister),
-      partialize: (state) =>
-        ({
-          criteria: state.criteria,
-          tools: state.tools,
-          scores: state.scores,
-          weights: state.weights,
-        }) as unknown as PughStore,
-    }),
+    devtools(
+      persist(storeCreator, {
+        name: persistKey,
+        storage: createPughStorageAdapter(persister),
+        partialize: (state) =>
+          ({
+            criteria: state.criteria,
+            tools: state.tools,
+            scores: state.scores,
+            weights: state.weights,
+          }) as unknown as PughStore,
+      }),
+      { name: `PughMatrix(${persistKey})` },
+    ),
   );
 
   if (persister.subscribe) {
