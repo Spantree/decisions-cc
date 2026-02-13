@@ -61,7 +61,7 @@ function App() {
 | `highlight` | `string` | no | Tool name to visually highlight a column |
 | `showWinner` | `boolean` | no | Highlight the highest weighted-total column in gold with a crown (default `false`) |
 | `isDark` | `boolean` | no | Enable dark mode styling (default `false`) |
-| `onScoreAdd` | `(entry) => void` | no | Callback when adding a new score. Receives `{ tool, criterion, score, label, comment? }`. If omitted, cells are read-only. |
+| `onScoreAdd` | `(entry) => void` | no | Callback when adding a new score. Receives `{ tool, criterion, score?, label?, comment? }`. If a score is provided, label is required. If omitted, cells are read-only. |
 
 ### ScoreEntry
 
@@ -70,14 +70,14 @@ interface ScoreEntry {
   id: string;           // unique identifier
   tool: string;         // column (option being scored)
   criterion: string;    // row (evaluation criterion)
-  score: number;        // 1–10
-  label: string;        // descriptive text shown below the score
-  comment?: string;     // optional comment for this score revision
+  score?: number;       // 1–10 (optional — omit for comment-only entries)
+  label?: string;       // descriptive text shown below the score (required when score is provided)
+  comment?: string;     // optional comment
   timestamp: number;    // epoch ms — used for ordering (latest wins)
 }
 ```
 
-Multiple entries per (tool, criterion) pair are allowed — this is how score history works. The component displays the entry with the latest `timestamp` and shows all entries in a hover tooltip sorted newest-first.
+Multiple entries per (tool, criterion) pair are allowed — this is how score history works. The component displays the most recent entry that has a `score` and shows all entries (including comment-only ones) in a hover tooltip sorted newest-first. Comment-only entries do not overwrite the displayed score.
 
 ### Score history
 
@@ -94,6 +94,22 @@ const scores = [
 
 The cell shows `7 / Revised`. Hovering reveals both entries with dates and comments.
 
+### Comment-only entries (dialog)
+
+Add comment-only entries to have a discussion on a cell without changing its score:
+
+```ts
+const scores = [
+  // Original score
+  { id: 'a1', tool: 'React', criterion: 'Cost', score: 9, label: 'Free', timestamp: 1707600000000 },
+  // Comment-only follow-up — score remains 9 / Free
+  { id: 'a2', tool: 'React', criterion: 'Cost', comment: 'But what about hosting?', timestamp: 1707686400000 },
+  { id: 'a3', tool: 'React', criterion: 'Cost', comment: 'Vercel free tier covers it', timestamp: 1707772800000 },
+];
+```
+
+The cell still displays `9 / Free` with its original color. Hovering reveals the full thread of scores and comments. In the edit form, score and label fields are marked as optional — submitting with only a comment creates a comment-only entry.
+
 ### Validation
 
 Each score entry's `tool` and `criterion` must match a value in the `tools` and `criteria` arrays. The component throws an error if any entry references an unrecognized tool or criterion, listing the allowed values in the error message.
@@ -105,8 +121,9 @@ Each score entry's `tool` and `criterion` must match a value in the `tools` and 
 - **Column highlighting** — pass `highlight="Option B"` to call out a specific column with a primary-color border
 - **Collapsible totals row** — weighted totals are hidden by default; toggle with the button below the table
 - **Dark mode** — pass `isDark={true}` or detect it from your app's theme system
-- **Score history** — multiple entries per cell; hover to see all revisions in a tooltip (latest timestamp wins)
-- **Inline editing** — pass `onScoreAdd` to let users click a cell and add a new score + label + comment
+- **Score history** — multiple entries per cell; hover to see all revisions in a tooltip (latest scored entry wins)
+- **Comment-only entries** — add comments without changing a cell's score, enabling threaded discussion on any cell
+- **Inline editing** — pass `onScoreAdd` to let users click a cell and add a new score + label, a comment, or both
 
 ## Dark mode
 

@@ -28,8 +28,24 @@ function entry(
   };
 }
 
+function commentOnly(
+  tool: string,
+  criterion: string,
+  comment: string,
+  timestamp: number,
+): ScoreEntry {
+  return {
+    id: `s${++idCounter}`,
+    tool,
+    criterion,
+    comment,
+    timestamp,
+  };
+}
+
 const t1 = 1707600000000; // Feb 11, 2024
 const t2 = 1707686400000; // Feb 12, 2024
+const t3 = 1707772800000; // Feb 13, 2024
 
 const scores: ScoreEntry[] = [
   entry('React', 'Cost', 9, 'Free', t1),
@@ -63,6 +79,14 @@ const scoresWithHistory: ScoreEntry[] = [
   entry('React', 'Cost', 7, 'Revised', t2, 'Hidden infra costs'),
   entry('React', 'Performance', 8, 'Improved', t2, 'After React 19 release'),
   entry('Svelte', 'Community Support', 7, 'Growing Fast', t2, 'SvelteKit adoption boosted ecosystem'),
+];
+
+// Scores with dialog: comment-only follow-ups that don't overwrite scores
+const scoresWithDialog: ScoreEntry[] = [
+  ...scoresWithHistory,
+  commentOnly('React', 'Cost', 'But what about hosting?', t3),
+  commentOnly('React', 'Cost', 'Vercel free tier covers most use cases', t3 + 1000),
+  commentOnly('Vue', 'Ease of Use', 'Composition API has a learning curve though', t3),
 ];
 
 const meta: Meta<typeof PughMatrix> = {
@@ -234,5 +258,38 @@ export const EditableActionOnly: Story = {
   args: {
     scores: scoresWithHistory,
     onScoreAdd: fn(),
+  },
+};
+
+/** Cells with comment-only follow-ups — the score persists while a dialog appears in hover history. */
+export const WithDialog: Story = {
+  args: {
+    scores: scoresWithDialog,
+  },
+};
+
+/** Editable dialog mode — add comment-only entries without overwriting scores. */
+export const EditableDialog: Story = {
+  args: {
+    scores: scoresWithDialog,
+  },
+  render: (args) => {
+    const [localScores, setLocalScores] = useState(args.scores ?? scoresWithDialog);
+    return (
+      <PughMatrix
+        {...args}
+        scores={localScores}
+        onScoreAdd={(newEntry) => {
+          setLocalScores((prev) => [
+            ...prev,
+            {
+              ...newEntry,
+              id: `new-${Date.now()}`,
+              timestamp: Date.now(),
+            },
+          ]);
+        }}
+      />
+    );
   },
 };
