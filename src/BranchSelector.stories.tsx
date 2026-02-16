@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { BranchSelector } from './BranchSelector';
 import PughMatrix from './PughMatrix';
 import { createPughStore } from './store/createPughStore';
+import { createLocalStoragePersister } from './persist/localStoragePersister';
 import { PughStoreProvider } from './store/PughStoreProvider';
 import './pugh-matrix.css';
 
@@ -21,14 +22,27 @@ function StoryBranchSelector({
   isDark,
   prePopulateBranches,
   showMatrix,
+  persistKey,
 }: {
   isDark?: boolean;
   prePopulateBranches?: boolean;
   showMatrix?: boolean;
+  persistKey?: string;
 }) {
+  const [resetKey, setResetKey] = useState(0);
   const store = useMemo(() => {
-    const s = createPughStore({ criteria, tools });
-    if (prePopulateBranches) {
+    // Check for persisted data BEFORE creating the store so seeding
+    // never races with rehydration.
+    const hasSavedData = persistKey && (() => { try { return !!localStorage.getItem(persistKey); } catch { return false; } })();
+    const s = createPughStore({
+      criteria,
+      tools,
+      ...(persistKey && {
+        persistKey,
+        persister: createLocalStoragePersister(),
+      }),
+    });
+    if (prePopulateBranches && !hasSavedData) {
       const state = () => s.getState();
       const t = Date.now();
 
@@ -75,10 +89,29 @@ function StoryBranchSelector({
       state().switchBranch('main');
     }
     return s;
-  }, [prePopulateBranches]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prePopulateBranches, persistKey, resetKey]);
+
+  const handleClear = persistKey
+    ? () => {
+        try { localStorage.removeItem(persistKey); } catch {}
+        setResetKey((k) => k + 1);
+      }
+    : undefined;
 
   return (
     <PughStoreProvider store={store}>
+      {handleClear && (
+        <div style={{ marginBottom: 8 }}>
+          <button
+            type="button"
+            onClick={handleClear}
+            style={{ fontSize: 13, cursor: 'pointer', padding: '4px 10px' }}
+          >
+            Clear saved data
+          </button>
+        </div>
+      )}
       <BranchSelector isDark={isDark} />
       {showMatrix && (
         <PughMatrix isDark={isDark} />
@@ -129,20 +162,22 @@ export const DarkMode: Story = {
   },
 };
 
-/** Branch selector with an embedded PughMatrix — switch branches to see scores change. */
+/** Branch selector with an embedded PughMatrix — edits and branches persist across reloads. */
 export const WithMatrix: Story = {
   args: {
     prePopulateBranches: true,
     showMatrix: true,
+    persistKey: 'pugh-branch-demo',
   },
 };
 
-/** WithMatrix in dark mode. */
+/** WithMatrix in dark mode — edits and branches persist across reloads. */
 export const WithMatrixDark: Story = {
   args: {
     prePopulateBranches: true,
     showMatrix: true,
     isDark: true,
+    persistKey: 'pugh-branch-demo-dark',
   },
   parameters: {
     backgrounds: { default: 'dark' },

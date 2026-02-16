@@ -217,14 +217,16 @@ export default function PughMatrix({
   };
 
   const handleAddTool = () => {
-    const id = `tool-${Date.now()}`;
-    addTool(id, 'New Tool', 'anonymous');
+    const label = 'New Tool';
+    const id = `${label.toLowerCase().replace(/\s+/g, '-')}-${Date.now().toString(36)}`;
+    addTool(id, label, 'anonymous');
     startEditingHeader('tool', id);
   };
 
   const handleAddCriterion = () => {
-    const id = `criterion-${Date.now()}`;
-    addCriterion(id, 'New Criterion');
+    const label = 'New Criterion';
+    const id = `${label.toLowerCase().replace(/\s+/g, '-')}-${Date.now().toString(36)}`;
+    addCriterion(id, label);
     startEditingHeader('criterion', id);
   };
 

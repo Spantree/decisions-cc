@@ -9,6 +9,8 @@ export interface PughDomainState {
 }
 
 export interface PughEventStoreState {
+  events: PughEvent[];
+  eventsByBranch: Record<string, PughEvent[]>;
   branches: Branch[];
   activeBranchId: string;
 }

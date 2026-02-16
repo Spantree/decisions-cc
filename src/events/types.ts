@@ -66,7 +66,6 @@ export type PughEvent =
 export interface Branch {
   id: string;
   name: string;
-  events: PughEvent[];
   createdAt: number;
   parentBranchId?: string;
   forkEventIndex?: number;

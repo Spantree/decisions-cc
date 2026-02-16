@@ -7,6 +7,7 @@ export interface BranchSelectorProps {
 
 export function BranchSelector({ isDark }: BranchSelectorProps) {
   const branches = usePughStore((s) => s.branches);
+  const eventsByBranch = usePughStore((s) => s.eventsByBranch);
   const activeBranchId = usePughStore((s) => s.activeBranchId);
   const createBranch = usePughStore((s) => s.createBranch);
   const switchBranch = usePughStore((s) => s.switchBranch);
@@ -93,7 +94,7 @@ export function BranchSelector({ isDark }: BranchSelectorProps) {
       >
         {activeBranch?.name ?? 'main'}
         <span className="pugh-branch-item-badge">
-          {activeBranch?.events.length ?? 0}
+          {eventsByBranch[activeBranchId]?.length ?? 0}
         </span>
         <span className="pugh-branch-trigger-arrow">{isOpen ? '▲' : '▼'}</span>
       </button>
@@ -132,7 +133,7 @@ export function BranchSelector({ isDark }: BranchSelectorProps) {
                 </span>
               )}
               <span className="pugh-branch-item-badge">
-                {branch.events.length}
+                {eventsByBranch[branch.id]?.length ?? 0}
               </span>
               {branch.id !== 'main' && (
                 <button
