@@ -268,12 +268,15 @@ export default function PughMatrix({
                     <Table.Cell
                       key={tool}
                       className={`pugh-score-cell${onScoreAdd ? ' pugh-score-cell-editable' : ''}${isWinner(tool) ? ' pugh-winner-cell' : isHighlighted(tool) ? ' pugh-highlight-cell' : ''}`}
-                      style={{
-                        backgroundColor: colors.bg,
-                        color: colors.text,
-                      }}
                       onClick={() => handleCellClick(tool, criterion)}
                     >
+                      <div
+                        className="pugh-score-fill"
+                        style={{
+                          backgroundColor: colors.bg,
+                          color: colors.text,
+                        }}
+                      >
                       {editing ? (
                         <div
                           className="pugh-edit-form"
@@ -356,6 +359,7 @@ export default function PughMatrix({
                           </HoverCard.Content>
                         </HoverCard.Root>
                       ) : null}
+                      </div>
                     </Table.Cell>
                   );
                 })}
@@ -375,12 +379,16 @@ export default function PughMatrix({
                     <Table.Cell
                       key={tool}
                       className={`pugh-total-cell${isWinner(tool) ? ' pugh-winner-cell' : isHighlighted(tool) ? ' pugh-highlight-cell' : ''}`}
-                      style={{
-                        backgroundColor: colors.bg,
-                        color: colors.text,
-                      }}
                     >
-                      {total}
+                      <div
+                        className="pugh-score-fill"
+                        style={{
+                          backgroundColor: colors.bg,
+                          color: colors.text,
+                        }}
+                      >
+                        {total}
+                      </div>
                     </Table.Cell>
                   );
                 })}

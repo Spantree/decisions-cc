@@ -12,11 +12,6 @@
   background-color: var(--pugh-bg);
 }
 
-.pugh-container table {
-  border-collapse: separate;
-  border-spacing: 2px;
-}
-
 .pugh-container.pugh-dark {
   --pugh-border-color: #444;
   --pugh-head-bg: #363636;
@@ -57,10 +52,14 @@
 
 .pugh-score-cell {
   font-variant-numeric: tabular-nums;
-  transition: background-color 0.15s ease;
   min-width: 90px;
   vertical-align: middle;
+}
+
+.pugh-score-fill {
   border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  transition: background-color 0.15s ease;
 }
 
 .pugh-score-cell-editable {
@@ -189,8 +188,6 @@
 .pugh-total-cell {
   font-weight: 700;
   font-size: 0.95rem;
-  transition: background-color 0.15s ease;
-  border-radius: 6px;
 }
 
 .pugh-toggle-button {
