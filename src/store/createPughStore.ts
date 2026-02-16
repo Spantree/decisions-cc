@@ -1,4 +1,4 @@
-import { createStore } from 'zustand/vanilla';
+import { createStore, type StateCreator } from 'zustand/vanilla';
 import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import type { Criterion, Tool, ScoreEntry } from '../types';
 import type { Persister } from '../persist/types';
@@ -38,9 +38,7 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
     }
   }
 
-  const storeCreator = (
-    set: (fn: (state: PughStore) => Partial<PughStore>) => void,
-  ): PughStore => ({
+  const storeCreator: StateCreator<PughStore> = (set) => ({
     criteria,
     tools,
     scores,
