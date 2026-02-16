@@ -64,5 +64,8 @@
     "typescript": "^5.6.0",
     "vitest": "^4.0.18"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "zustand": "^5.0.11"
+  }
 }

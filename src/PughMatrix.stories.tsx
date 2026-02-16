@@ -1,17 +1,31 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { fn, within, userEvent } from 'storybook/test';
+import { within, userEvent } from 'storybook/test';
 import PughMatrix from './PughMatrix';
+import { createPughStore } from './store/createPughStore';
+import { PughStoreProvider } from './store/PughStoreProvider';
+import { createLocalStoragePersister } from './persist/localStoragePersister';
 import './pugh-matrix.css';
-import type { ScoreEntry } from './types';
+import type { Criterion, Tool, ScoreEntry } from './types';
 
-const criteria = ['Cost', 'Performance', 'Ease of Use', 'Community Support', 'Documentation'];
-const tools = ['React', 'Vue', 'Svelte', 'Angular'];
+const criteria: Criterion[] = [
+  { id: 'cost', label: 'Cost' },
+  { id: 'performance', label: 'Performance' },
+  { id: 'ease-of-use', label: 'Ease of Use' },
+  { id: 'community', label: 'Community Support' },
+  { id: 'docs', label: 'Documentation' },
+];
+const tools: Tool[] = [
+  { id: 'react', label: 'React' },
+  { id: 'vue', label: 'Vue' },
+  { id: 'svelte', label: 'Svelte' },
+  { id: 'angular', label: 'Angular' },
+];
 
 let idCounter = 0;
 function entry(
-  tool: string,
-  criterion: string,
+  toolId: string,
+  criterionId: string,
   score: number,
   label: string,
   timestamp: number,
@@ -19,8 +33,8 @@ function entry(
 ): ScoreEntry {
   return {
     id: `s${++idCounter}`,
-    tool,
-    criterion,
+    toolId,
+    criterionId,
     score,
     label,
     comment,
@@ -29,15 +43,15 @@ function entry(
 }
 
 function commentOnly(
-  tool: string,
-  criterion: string,
+  toolId: string,
+  criterionId: string,
   comment: string,
   timestamp: number,
 ): ScoreEntry {
   return {
     id: `s${++idCounter}`,
-    tool,
-    criterion,
+    toolId,
+    criterionId,
     comment,
     timestamp,
   };
@@ -48,60 +62,78 @@ const t2 = 1707686400000; // Feb 12, 2024
 const t3 = 1707772800000; // Feb 13, 2024
 
 const scores: ScoreEntry[] = [
-  entry('React', 'Cost', 9, 'Free', t1),
-  entry('React', 'Performance', 7, 'Good', t1),
-  entry('React', 'Ease of Use', 6, 'Moderate', t1),
-  entry('React', 'Community Support', 10, 'Massive', t1),
-  entry('React', 'Documentation', 8, 'Extensive', t1),
+  entry('react', 'cost', 9, 'Free', t1),
+  entry('react', 'performance', 7, 'Good', t1),
+  entry('react', 'ease-of-use', 6, 'Moderate', t1),
+  entry('react', 'community', 10, 'Massive', t1),
+  entry('react', 'docs', 8, 'Extensive', t1),
 
-  entry('Vue', 'Cost', 9, 'Free', t1),
-  entry('Vue', 'Performance', 8, 'Great', t1),
-  entry('Vue', 'Ease of Use', 9, 'Easy', t1),
-  entry('Vue', 'Community Support', 7, 'Strong', t1),
-  entry('Vue', 'Documentation', 9, 'Excellent', t1),
+  entry('vue', 'cost', 9, 'Free', t1),
+  entry('vue', 'performance', 8, 'Great', t1),
+  entry('vue', 'ease-of-use', 9, 'Easy', t1),
+  entry('vue', 'community', 7, 'Strong', t1),
+  entry('vue', 'docs', 9, 'Excellent', t1),
 
-  entry('Svelte', 'Cost', 9, 'Free', t1),
-  entry('Svelte', 'Performance', 10, 'Fastest', t1),
-  entry('Svelte', 'Ease of Use', 8, 'Simple', t1),
-  entry('Svelte', 'Community Support', 5, 'Growing', t1),
-  entry('Svelte', 'Documentation', 7, 'Good', t1),
+  entry('svelte', 'cost', 9, 'Free', t1),
+  entry('svelte', 'performance', 10, 'Fastest', t1),
+  entry('svelte', 'ease-of-use', 8, 'Simple', t1),
+  entry('svelte', 'community', 5, 'Growing', t1),
+  entry('svelte', 'docs', 7, 'Good', t1),
 
-  entry('Angular', 'Cost', 9, 'Free', t1),
-  entry('Angular', 'Performance', 6, 'Decent', t1),
-  entry('Angular', 'Ease of Use', 4, 'Complex', t1),
-  entry('Angular', 'Community Support', 8, 'Large', t1),
-  entry('Angular', 'Documentation', 8, 'Thorough', t1),
+  entry('angular', 'cost', 9, 'Free', t1),
+  entry('angular', 'performance', 6, 'Decent', t1),
+  entry('angular', 'ease-of-use', 4, 'Complex', t1),
+  entry('angular', 'community', 8, 'Large', t1),
+  entry('angular', 'docs', 8, 'Thorough', t1),
 ];
 
 // Scores with history: some cells have revised entries
 const scoresWithHistory: ScoreEntry[] = [
   ...scores,
-  entry('React', 'Cost', 7, 'Revised', t2, 'Hidden infra costs'),
-  entry('React', 'Performance', 8, 'Improved', t2, 'After React 19 release'),
-  entry('Svelte', 'Community Support', 7, 'Growing Fast', t2, 'SvelteKit adoption boosted ecosystem'),
+  entry('react', 'cost', 7, 'Revised', t2, 'Hidden infra costs'),
+  entry('react', 'performance', 8, 'Improved', t2, 'After React 19 release'),
+  entry('svelte', 'community', 7, 'Growing Fast', t2, 'SvelteKit adoption boosted ecosystem'),
 ];
 
 // Scores with dialog: comment-only follow-ups that don't overwrite scores
 const scoresWithDialog: ScoreEntry[] = [
   ...scoresWithHistory,
-  commentOnly('React', 'Cost', 'But what about hosting?', t3),
-  commentOnly('React', 'Cost', 'Vercel free tier covers most use cases', t3 + 1000),
-  commentOnly('Vue', 'Ease of Use', 'Composition API has a learning curve though', t3),
+  commentOnly('react', 'cost', 'But what about hosting?', t3),
+  commentOnly('react', 'cost', 'Vercel free tier covers most use cases', t3 + 1000),
+  commentOnly('vue', 'ease-of-use', 'Composition API has a learning curve though', t3),
 ];
 
-const meta: Meta<typeof PughMatrix> = {
+/** Helper: wraps PughMatrix in a store provider for each story. */
+function StoryMatrix({
+  scores: storyScores = scores,
+  highlight,
+  showWinner,
+  isDark,
+}: {
+  scores?: ScoreEntry[];
+  highlight?: string;
+  showWinner?: boolean;
+  isDark?: boolean;
+}) {
+  const store = useMemo(
+    () => createPughStore({ criteria, tools, scores: storyScores }),
+    [storyScores],
+  );
+  return (
+    <PughStoreProvider store={store}>
+      <PughMatrix highlight={highlight} showWinner={showWinner} isDark={isDark} />
+    </PughStoreProvider>
+  );
+}
+
+const meta: Meta<typeof StoryMatrix> = {
   title: 'PughMatrix',
-  component: PughMatrix,
-  args: {
-    criteria,
-    tools,
-    scores,
-  },
+  component: StoryMatrix,
   argTypes: {
     highlight: {
       control: 'select',
-      options: [undefined, ...tools],
-      description: 'Tool name to visually highlight a column',
+      options: [undefined, ...tools.map((t) => t.id)],
+      description: 'Tool ID to visually highlight a column',
     },
     showWinner: {
       control: 'boolean',
@@ -115,7 +147,7 @@ const meta: Meta<typeof PughMatrix> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof PughMatrix>;
+type Story = StoryObj<typeof StoryMatrix>;
 
 /** Default rendering with no highlight or winner. */
 export const Default: Story = {};
@@ -132,14 +164,14 @@ export const WithTotals: Story = {
 /** A single column highlighted with the `highlight` prop. */
 export const HighlightVue: Story = {
   args: {
-    highlight: 'Vue',
+    highlight: 'vue',
   },
 };
 
 /** Highlighting a different column for comparison. */
 export const HighlightSvelte: Story = {
   args: {
-    highlight: 'Svelte',
+    highlight: 'svelte',
   },
 };
 
@@ -157,7 +189,7 @@ export const DarkMode: Story = {
 export const DarkModeWithHighlight: Story = {
   args: {
     isDark: true,
-    highlight: 'React',
+    highlight: 'react',
   },
   parameters: {
     backgrounds: { default: 'dark' },
@@ -175,7 +207,7 @@ export const ShowWinner: Story = {
 export const WinnerWithHighlight: Story = {
   args: {
     showWinner: true,
-    highlight: 'Angular',
+    highlight: 'angular',
   },
 };
 
@@ -197,70 +229,6 @@ export const WithScoreHistory: Story = {
   },
 };
 
-/** Editable mode — click a cell to add a new score. The cell updates in place. */
-export const Editable: Story = {
-  args: {
-    scores: scoresWithHistory,
-  },
-  render: (args) => {
-    const [localScores, setLocalScores] = useState(args.scores ?? scoresWithHistory);
-    return (
-      <PughMatrix
-        {...args}
-        scores={localScores}
-        onScoreAdd={(newEntry) => {
-          setLocalScores((prev) => [
-            ...prev,
-            {
-              ...newEntry,
-              id: `new-${Date.now()}`,
-              timestamp: Date.now(),
-            },
-          ]);
-        }}
-      />
-    );
-  },
-};
-
-/** Editable mode in dark theme. */
-export const EditableDarkMode: Story = {
-  args: {
-    scores: scoresWithHistory,
-    isDark: true,
-  },
-  parameters: {
-    backgrounds: { default: 'dark' },
-  },
-  render: (args) => {
-    const [localScores, setLocalScores] = useState(args.scores ?? scoresWithHistory);
-    return (
-      <PughMatrix
-        {...args}
-        scores={localScores}
-        onScoreAdd={(newEntry) => {
-          setLocalScores((prev) => [
-            ...prev,
-            {
-              ...newEntry,
-              id: `new-${Date.now()}`,
-              timestamp: Date.now(),
-            },
-          ]);
-        }}
-      />
-    );
-  },
-};
-
-/** Read-only with onScoreAdd spy — actions logged in Storybook actions panel but UI doesn't update. */
-export const EditableActionOnly: Story = {
-  args: {
-    scores: scoresWithHistory,
-    onScoreAdd: fn(),
-  },
-};
-
 /** Cells with comment-only follow-ups — the score persists while a dialog appears in hover history. */
 export const WithDialog: Story = {
   args: {
@@ -268,28 +236,54 @@ export const WithDialog: Story = {
   },
 };
 
-/** Editable dialog mode — add comment-only entries without overwriting scores. */
-export const EditableDialog: Story = {
-  args: {
-    scores: scoresWithDialog,
-  },
+/* ------------------------------------------------------------------ */
+/*  localStorage persistence story                                    */
+/* ------------------------------------------------------------------ */
+
+const PERSIST_KEY = 'pugh-storybook-demo';
+
+/**
+ * Store with localStorage persistence — edits survive page reloads.
+ * Click any cell to add a score. Use "Clear saved data" to reset to defaults.
+ * Writes to localStorage key "pugh-storybook-demo".
+ */
+export const WithLocalStorage: Story = {
   render: (args) => {
-    const [localScores, setLocalScores] = useState(args.scores ?? scoresWithDialog);
+    const [resetKey, setResetKey] = useState(0);
+    const store = useMemo(
+      () =>
+        createPughStore({
+          criteria,
+          tools,
+          scores: scoresWithHistory,
+          persistKey: PERSIST_KEY,
+          persister: createLocalStoragePersister(),
+        }),
+      [resetKey],
+    );
+    const handleClear = () => {
+      try { localStorage.removeItem(PERSIST_KEY); } catch {}
+      setResetKey((k) => k + 1);
+    };
     return (
-      <PughMatrix
-        {...args}
-        scores={localScores}
-        onScoreAdd={(newEntry) => {
-          setLocalScores((prev) => [
-            ...prev,
-            {
-              ...newEntry,
-              id: `new-${Date.now()}`,
-              timestamp: Date.now(),
-            },
-          ]);
-        }}
-      />
+      <div>
+        <div style={{ marginBottom: 8 }}>
+          <button
+            type="button"
+            onClick={handleClear}
+            style={{ fontSize: 13, cursor: 'pointer', padding: '4px 10px' }}
+          >
+            Clear saved data
+          </button>
+        </div>
+        <PughStoreProvider store={store}>
+          <PughMatrix
+            highlight={args.highlight}
+            showWinner={args.showWinner}
+            isDark={args.isDark}
+          />
+        </PughStoreProvider>
+      </div>
     );
   },
 };
