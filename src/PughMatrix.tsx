@@ -193,6 +193,7 @@ export default function PughMatrix({
       label: trimmedLabel,
       comment: trimmedComment,
       timestamp: Date.now(),
+      user: 'anonymous',
     });
     cancelEditing();
   };

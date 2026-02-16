@@ -9,11 +9,11 @@ import './pugh-matrix.css';
 import type { Criterion, Tool, ScoreEntry } from './types';
 
 const criteria: Criterion[] = [
-  { id: 'cost', label: 'Cost' },
-  { id: 'performance', label: 'Performance' },
-  { id: 'ease-of-use', label: 'Ease of Use' },
-  { id: 'community', label: 'Community Support' },
-  { id: 'docs', label: 'Documentation' },
+  { id: 'cost', label: 'Cost', user: 'alice' },
+  { id: 'performance', label: 'Performance', user: 'alice' },
+  { id: 'ease-of-use', label: 'Ease of Use', user: 'alice' },
+  { id: 'community', label: 'Community Support', user: 'alice' },
+  { id: 'docs', label: 'Documentation', user: 'alice' },
 ];
 const tools: Tool[] = [
   { id: 'react', label: 'React' },
@@ -39,6 +39,7 @@ function entry(
     label,
     comment,
     timestamp,
+    user: 'alice',
   };
 }
 
@@ -54,6 +55,7 @@ function commentOnly(
     criterionId,
     comment,
     timestamp,
+    user: 'alice',
   };
 }
 

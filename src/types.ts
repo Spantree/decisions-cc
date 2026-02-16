@@ -1,6 +1,7 @@
 export interface Criterion {
   id: string;
   label: string;
+  user: string;
 }
 
 export interface Tool {
@@ -16,4 +17,5 @@ export interface ScoreEntry {
   label?: string;
   comment?: string;
   timestamp: number;
+  user: string;
 }

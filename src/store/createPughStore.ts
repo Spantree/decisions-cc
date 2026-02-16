@@ -85,7 +85,7 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
       })),
     addCriterion: (id: string, label: string) =>
       set((state) => ({
-        criteria: [...state.criteria, { id, label }],
+        criteria: [...state.criteria, { id, label, user: 'anonymous' }],
         weights: { ...state.weights, [id]: 10 },
       })),
     removeCriterion: (id: string) =>
