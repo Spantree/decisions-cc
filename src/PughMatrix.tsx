@@ -452,18 +452,6 @@ export default function PughMatrix({
                 <Table.Cell />
               </Table.Row>
             ))}
-            <Table.Row>
-              <Table.Cell colSpan={tools.length + 3} className="pugh-add-cell">
-                <button
-                  type="button"
-                  className="pugh-add-button"
-                  aria-label="Add criterion"
-                  onClick={handleAddCriterion}
-                >
-                  +
-                </button>
-              </Table.Cell>
-            </Table.Row>
             {showTotals && (
               <Table.Row className="pugh-total-row">
                 <Table.RowHeaderCell className="pugh-total-label">Weighted Total</Table.RowHeaderCell>
@@ -494,6 +482,18 @@ export default function PughMatrix({
                 <Table.Cell />
               </Table.Row>
             )}
+            <Table.Row>
+              <Table.Cell colSpan={tools.length + 3} className="pugh-add-cell">
+                <button
+                  type="button"
+                  className="pugh-add-button"
+                  aria-label="Add criterion"
+                  onClick={handleAddCriterion}
+                >
+                  +
+                </button>
+              </Table.Cell>
+            </Table.Row>
           </Table.Body>
         </Table.Root>
         <button

@@ -310,7 +310,6 @@
   box-shadow: inset 0 0 0 1px rgba(46, 133, 85, 0.15);
 }
 
-.pugh-container tbody tr:last-child .pugh-highlight-cell,
 .pugh-container tbody tr:nth-last-child(2) .pugh-highlight-cell {
   border-bottom: 2.5px solid var(--pugh-primary) !important;
 }
@@ -327,7 +326,6 @@
   box-shadow: inset 0 0 0 1px rgba(212, 160, 23, 0.2);
 }
 
-.pugh-container tbody tr:last-child .pugh-winner-cell,
 .pugh-container tbody tr:nth-last-child(2) .pugh-winner-cell {
   border-bottom: 2.5px solid #d4a017 !important;
 }
