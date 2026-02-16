@@ -13,6 +13,8 @@ export interface PughUIState {
   editScore: string;
   editLabel: string;
   editComment: string;
+  editingHeader: { type: 'tool' | 'criterion'; id: string } | null;
+  editHeaderValue: string;
 }
 
 export interface PughActions {
@@ -29,6 +31,10 @@ export interface PughActions {
   setEditComment: (comment: string) => void;
   renameTool: (id: string, newLabel: string) => void;
   renameCriterion: (id: string, newLabel: string) => void;
+  startEditingHeader: (type: 'tool' | 'criterion', id: string) => void;
+  cancelEditingHeader: () => void;
+  setEditHeaderValue: (value: string) => void;
+  saveHeaderEdit: () => void;
 }
 
 export type PughStore = PughDomainState & PughUIState & PughActions;

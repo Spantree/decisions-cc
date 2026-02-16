@@ -89,6 +89,28 @@
   margin-top: 0.1rem;
 }
 
+/* Editable headers */
+.pugh-header-editable {
+  cursor: pointer;
+}
+
+.pugh-header-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.2rem 0.3rem;
+  font-size: inherit;
+  font-weight: inherit;
+  border: 1px solid var(--pugh-primary);
+  border-radius: 4px;
+  background: var(--pugh-bg);
+  color: var(--pugh-text);
+}
+
+.pugh-header-input:focus {
+  outline: 2px solid var(--pugh-primary);
+  outline-offset: -1px;
+}
+
 /* Edit form */
 .pugh-edit-form {
   display: flex;

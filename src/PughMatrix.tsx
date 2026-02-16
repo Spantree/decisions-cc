@@ -69,6 +69,12 @@ export default function PughMatrix({
   const setEditComment = usePughStore((s) => s.setEditComment);
   const addScore = usePughStore((s) => s.addScore);
   const toggleTotals = usePughStore((s) => s.toggleTotals);
+  const editingHeader = usePughStore((s) => s.editingHeader);
+  const editHeaderValue = usePughStore((s) => s.editHeaderValue);
+  const startEditingHeader = usePughStore((s) => s.startEditingHeader);
+  const cancelEditingHeader = usePughStore((s) => s.cancelEditingHeader);
+  const setEditHeaderValue = usePughStore((s) => s.setEditHeaderValue);
+  const saveHeaderEdit = usePughStore((s) => s.saveHeaderEdit);
 
   const { latestByCell, historyByCell, weightedTotals, maxTotal, winner } =
     useMemo(() => {
@@ -180,10 +186,21 @@ export default function PughMatrix({
     }
   };
 
+  const handleHeaderKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      cancelEditingHeader();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      saveHeaderEdit();
+    }
+  };
+
   const isHighlighted = (toolId: string) => highlight && toolId === highlight;
   const isWinner = (toolId: string) => winner && toolId === winner;
   const isEditing = (toolId: string, criterionId: string) =>
     editingCell?.toolId === toolId && editingCell?.criterionId === criterionId;
+  const isEditingHeaderCell = (type: 'tool' | 'criterion', id: string) =>
+    editingHeader?.type === type && editingHeader?.id === id;
 
   return (
     <Theme appearance={isDark ? 'dark' : 'light'} accentColor="green" hasBackground={false}>
@@ -196,9 +213,25 @@ export default function PughMatrix({
               {tools.map((tool) => (
                 <Table.ColumnHeaderCell
                   key={tool.id}
-                  className={`pugh-tool-header${isWinner(tool.id) ? ' pugh-winner-header' : isHighlighted(tool.id) ? ' pugh-highlight-header' : ''}`}
+                  className={`pugh-tool-header pugh-header-editable${isWinner(tool.id) ? ' pugh-winner-header' : isHighlighted(tool.id) ? ' pugh-highlight-header' : ''}`}
+                  onClick={() => startEditingHeader('tool', tool.id)}
                 >
-                  {isWinner(tool.id) ? `👑 ${tool.label}` : tool.label}
+                  {isEditingHeaderCell('tool', tool.id) ? (
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="text"
+                        aria-label={`Rename tool ${tool.label}`}
+                        value={editHeaderValue}
+                        onChange={(e) => setEditHeaderValue(e.target.value)}
+                        onKeyDown={handleHeaderKeyDown}
+                        onBlur={saveHeaderEdit}
+                        className="pugh-header-input"
+                        autoFocus
+                      />
+                    </div>
+                  ) : (
+                    isWinner(tool.id) ? `👑 ${tool.label}` : tool.label
+                  )}
                 </Table.ColumnHeaderCell>
               ))}
             </Table.Row>
@@ -206,7 +239,27 @@ export default function PughMatrix({
           <Table.Body>
             {criteria.map((criterion) => (
               <Table.Row key={criterion.id}>
-                <Table.RowHeaderCell className="pugh-criterion-cell">{criterion.label}</Table.RowHeaderCell>
+                <Table.RowHeaderCell
+                  className="pugh-criterion-cell pugh-header-editable"
+                  onClick={() => startEditingHeader('criterion', criterion.id)}
+                >
+                  {isEditingHeaderCell('criterion', criterion.id) ? (
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="text"
+                        aria-label={`Rename criterion ${criterion.label}`}
+                        value={editHeaderValue}
+                        onChange={(e) => setEditHeaderValue(e.target.value)}
+                        onKeyDown={handleHeaderKeyDown}
+                        onBlur={saveHeaderEdit}
+                        className="pugh-header-input"
+                        autoFocus
+                      />
+                    </div>
+                  ) : (
+                    criterion.label
+                  )}
+                </Table.RowHeaderCell>
                 <Table.Cell className="pugh-weight-cell">
                   <input
                     type="text"

@@ -50,6 +50,8 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
     editScore: '',
     editLabel: '',
     editComment: '',
+    editingHeader: null,
+    editHeaderValue: '',
     setCriteria: (criteria: Criterion[]) => set(() => ({ criteria })),
     setTools: (tools: Tool[]) => set(() => ({ tools })),
     addScore: (entry: ScoreEntry) =>
@@ -83,6 +85,36 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
           c.id === id ? { ...c, label: newLabel } : c,
         ),
       })),
+    startEditingHeader: (type: 'tool' | 'criterion', id: string) =>
+      set((state) => {
+        const items = type === 'tool' ? state.tools : state.criteria;
+        const item = items.find((i) => i.id === id);
+        return {
+          editingHeader: { type, id },
+          editHeaderValue: item?.label ?? '',
+        };
+      }),
+    cancelEditingHeader: () => set(() => ({ editingHeader: null, editHeaderValue: '' })),
+    setEditHeaderValue: (editHeaderValue: string) => set(() => ({ editHeaderValue })),
+    saveHeaderEdit: () =>
+      set((state) => {
+        if (!state.editingHeader) return {};
+        const trimmed = state.editHeaderValue.trim();
+        if (!trimmed) return {};
+        const { type, id } = state.editingHeader;
+        if (type === 'tool') {
+          return {
+            tools: state.tools.map((t) => (t.id === id ? { ...t, label: trimmed } : t)),
+            editingHeader: null,
+            editHeaderValue: '',
+          };
+        }
+        return {
+          criteria: state.criteria.map((c) => (c.id === id ? { ...c, label: trimmed } : c)),
+          editingHeader: null,
+          editHeaderValue: '',
+        };
+      }),
   });
 
   if (!persister) {
