@@ -1,22 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { HoverCard, Table, Theme } from '@radix-ui/themes';
 import type { ScoreEntry } from './types';
+import { usePughStore } from './store/usePughStore';
 import './pugh-matrix.css';
 
 export interface PughMatrixProps {
-  criteria: string[];
-  tools: string[];
-  scores: ScoreEntry[];
   highlight?: string;
   showWinner?: boolean;
   isDark?: boolean;
-  onScoreAdd?: (entry: {
-    tool: string;
-    criterion: string;
-    score?: number;
-    label?: string;
-    comment?: string;
-  }) => void;
 }
 
 const scoreColorCache = new Map<string, { bg: string; text: string }>();
@@ -29,13 +20,11 @@ function getScoreColor(
   const cached = scoreColorCache.get(key);
   if (cached) return cached;
 
-  // Diverging palette: low scores = red, mid scores = neutral gray, high scores = green
-  // This makes extremes pop while the middle fades out
   const ratio = Math.max(0, Math.min(1, (score - 1) / 9));
   const midpoint = 0.5;
-  const distance = Math.abs(ratio - midpoint) / midpoint; // 0 at center, 1 at extremes
-  const hue = ratio * 120; // 0 (red) → 120 (green)
-  const saturation = distance * distance; // quadratic ramp: gray in center, vivid at edges
+  const distance = Math.abs(ratio - midpoint) / midpoint;
+  const hue = ratio * 120;
+  const saturation = distance * distance;
 
   const result = isDark
     ? {
@@ -59,47 +48,56 @@ function formatDate(timestamp: number): string {
 }
 
 export default function PughMatrix({
-  criteria,
-  tools,
-  scores,
   highlight,
   showWinner = false,
   isDark = false,
-  onScoreAdd,
 }: PughMatrixProps) {
-  const [weights, setWeights] = useState<Record<string, number>>(() =>
-    Object.fromEntries(criteria.map((c) => [c, 10])),
-  );
-
-  const [showTotals, setShowTotals] = useState(false);
-  const [editingCell, setEditingCell] = useState<{
-    tool: string;
-    criterion: string;
-  } | null>(null);
-  const [editScore, setEditScore] = useState('');
-  const [editLabel, setEditLabel] = useState('');
-  const [editComment, setEditComment] = useState('');
+  const criteria = usePughStore((s) => s.criteria);
+  const tools = usePughStore((s) => s.tools);
+  const scores = usePughStore((s) => s.scores);
+  const weights = usePughStore((s) => s.weights);
+  const showTotals = usePughStore((s) => s.showTotals);
+  const editingCell = usePughStore((s) => s.editingCell);
+  const editScore = usePughStore((s) => s.editScore);
+  const editLabel = usePughStore((s) => s.editLabel);
+  const editComment = usePughStore((s) => s.editComment);
+  const setWeight = usePughStore((s) => s.setWeight);
+  const startEditing = usePughStore((s) => s.startEditing);
+  const cancelEditing = usePughStore((s) => s.cancelEditing);
+  const setEditScore = usePughStore((s) => s.setEditScore);
+  const setEditLabel = usePughStore((s) => s.setEditLabel);
+  const setEditComment = usePughStore((s) => s.setEditComment);
+  const addScore = usePughStore((s) => s.addScore);
+  const toggleTotals = usePughStore((s) => s.toggleTotals);
+  const addTool = usePughStore((s) => s.addTool);
+  const removeTool = usePughStore((s) => s.removeTool);
+  const addCriterion = usePughStore((s) => s.addCriterion);
+  const removeCriterion = usePughStore((s) => s.removeCriterion);
+  const editingHeader = usePughStore((s) => s.editingHeader);
+  const editHeaderValue = usePughStore((s) => s.editHeaderValue);
+  const startEditingHeader = usePughStore((s) => s.startEditingHeader);
+  const cancelEditingHeader = usePughStore((s) => s.cancelEditingHeader);
+  const setEditHeaderValue = usePughStore((s) => s.setEditHeaderValue);
+  const saveHeaderEdit = usePughStore((s) => s.saveHeaderEdit);
 
   const { latestByCell, historyByCell, weightedTotals, maxTotal, winner } =
     useMemo(() => {
-      const toolSet = new Set(tools);
-      const criterionSet = new Set(criteria);
+      const toolSet = new Set(tools.map((t) => t.id));
+      const criterionSet = new Set(criteria.map((c) => c.id));
       const history = new Map<string, ScoreEntry[]>();
       const latest = new Map<string, ScoreEntry>();
 
       for (const entry of scores) {
-        if (!toolSet.has(entry.tool) || !criterionSet.has(entry.criterion)) {
+        if (!toolSet.has(entry.toolId) || !criterionSet.has(entry.criterionId)) {
           throw new Error(
-            `PughMatrix: score entry "${entry.id}" references invalid tool "${entry.tool}" or criterion "${entry.criterion}". ` +
-            `Allowed tools: [${tools.join(', ')}]. Allowed criteria: [${criteria.join(', ')}].`,
+            `PughMatrix: score entry "${entry.id}" references invalid tool "${entry.toolId}" or criterion "${entry.criterionId}". ` +
+            `Allowed tools: [${tools.map((t) => t.id).join(', ')}]. Allowed criteria: [${criteria.map((c) => c.id).join(', ')}].`,
           );
         }
-        const key = `${entry.tool}\0${entry.criterion}`;
+        const key = `${entry.toolId}\0${entry.criterionId}`;
         const arr = history.get(key) ?? [];
         arr.push(entry);
         history.set(key, arr);
-        // Only track entries with a score as the "latest scored" entry,
-        // so comment-only entries don't overwrite the displayed score
         if (entry.score != null) {
           const prev = latest.get(key);
           if (!prev || entry.timestamp > prev.timestamp) {
@@ -118,17 +116,17 @@ export default function PughMatrix({
       for (const tool of tools) {
         let total = 0;
         for (const criterion of criteria) {
-          const key = `${tool}\0${criterion}`;
+          const key = `${tool.id}\0${criterion.id}`;
           const entry = latest.get(key);
           const score = entry?.score ?? 0;
-          const weight = weights[criterion] ?? 10;
+          const weight = weights[criterion.id] ?? 10;
           total += score * weight;
         }
         const rounded = Math.round(total * 10) / 10;
-        totals[tool] = rounded;
+        totals[tool.id] = rounded;
         if (rounded > max) {
           max = rounded;
-          best = tool;
+          best = tool.id;
         }
       }
 
@@ -141,23 +139,15 @@ export default function PughMatrix({
       };
     }, [scores, tools, criteria, weights, showWinner]);
 
-  const handleWeightChange = (criterion: string, value: string) => {
+  const handleWeightChange = (criterionId: string, value: string) => {
     if (value === '') {
-      setWeights((prev) => ({ ...prev, [criterion]: 0 }));
+      setWeight(criterionId, 0);
       return;
     }
     const num = Math.round(Number(value));
     if (!isNaN(num) && num >= 0 && num <= 10) {
-      setWeights((prev) => ({ ...prev, [criterion]: num }));
+      setWeight(criterionId, num);
     }
-  };
-
-  const handleCellClick = (tool: string, criterion: string) => {
-    if (!onScoreAdd) return;
-    setEditingCell({ tool, criterion });
-    setEditScore('');
-    setEditLabel('');
-    setEditComment('');
   };
 
   const handleEditScoreChange = (value: string) => {
@@ -172,42 +162,72 @@ export default function PughMatrix({
   };
 
   const handleEditSave = () => {
-    if (!editingCell || !onScoreAdd) return;
+    if (!editingCell) return;
     const scoreNum = editScore ? Number(editScore) : undefined;
     if (scoreNum != null && (isNaN(scoreNum) || scoreNum < 1 || scoreNum > 10)) return;
     const trimmedLabel = editLabel.trim() || undefined;
     const trimmedComment = editComment.trim() || undefined;
-    // If a score is provided, label is required
     if (scoreNum != null && !trimmedLabel) return;
-    // Require at least one of score or comment
     if (scoreNum == null && !trimmedComment) return;
-    onScoreAdd({
-      tool: editingCell.tool,
-      criterion: editingCell.criterion,
+    addScore({
+      id: `score-${Date.now()}`,
+      toolId: editingCell.toolId,
+      criterionId: editingCell.criterionId,
       score: scoreNum,
       label: trimmedLabel,
       comment: trimmedComment,
+      timestamp: Date.now(),
     });
-    setEditingCell(null);
-  };
-
-  const handleEditCancel = () => {
-    setEditingCell(null);
+    cancelEditing();
   };
 
   const handleEditKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
-      handleEditCancel();
+      cancelEditing();
     } else if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleEditSave();
     }
   };
 
-  const isHighlighted = (tool: string) => highlight && tool === highlight;
-  const isWinner = (tool: string) => winner && tool === winner;
-  const isEditing = (tool: string, criterion: string) =>
-    editingCell?.tool === tool && editingCell?.criterion === criterion;
+  const handleHeaderKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      cancelEditingHeader();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      saveHeaderEdit();
+    }
+  };
+
+  const handleAddTool = () => {
+    const id = `tool-${Date.now()}`;
+    addTool(id, 'New Tool');
+    startEditingHeader('tool', id);
+  };
+
+  const handleAddCriterion = () => {
+    const id = `criterion-${Date.now()}`;
+    addCriterion(id, 'New Criterion');
+    startEditingHeader('criterion', id);
+  };
+
+  const handleDeleteHeader = () => {
+    if (!editingHeader) return;
+    const { type, id } = editingHeader;
+    if (type === 'tool') {
+      removeTool(id);
+    } else {
+      removeCriterion(id);
+    }
+    cancelEditingHeader();
+  };
+
+  const isHighlighted = (toolId: string) => highlight && toolId === highlight;
+  const isWinner = (toolId: string) => winner && toolId === winner;
+  const isEditing = (toolId: string, criterionId: string) =>
+    editingCell?.toolId === toolId && editingCell?.criterionId === criterionId;
+  const isEditingHeaderCell = (type: 'tool' | 'criterion', id: string) =>
+    editingHeader?.type === type && editingHeader?.id === id;
 
   return (
     <Theme appearance={isDark ? 'dark' : 'light'} accentColor="green" hasBackground={false}>
@@ -219,31 +239,95 @@ export default function PughMatrix({
               <Table.ColumnHeaderCell width="72px">Weight</Table.ColumnHeaderCell>
               {tools.map((tool) => (
                 <Table.ColumnHeaderCell
-                  key={tool}
-                  className={`pugh-tool-header${isWinner(tool) ? ' pugh-winner-header' : isHighlighted(tool) ? ' pugh-highlight-header' : ''}`}
+                  key={tool.id}
+                  className={`pugh-tool-header pugh-header-editable${isWinner(tool.id) ? ' pugh-winner-header' : isHighlighted(tool.id) ? ' pugh-highlight-header' : ''}`}
+                  onClick={() => startEditingHeader('tool', tool.id)}
                 >
-                  {isWinner(tool) ? `👑 ${tool}` : tool}
+                  {isEditingHeaderCell('tool', tool.id) ? (
+                    <div className="pugh-header-edit-row" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="text"
+                        aria-label={`Rename tool ${tool.label}`}
+                        value={editHeaderValue}
+                        onChange={(e) => setEditHeaderValue(e.target.value)}
+                        onKeyDown={handleHeaderKeyDown}
+                        onBlur={saveHeaderEdit}
+                        className="pugh-header-input"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        className="pugh-header-delete-button"
+                        aria-label={`Delete tool ${tool.label}`}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={handleDeleteHeader}
+                      >
+                        🗑
+                      </button>
+                    </div>
+                  ) : (
+                    isWinner(tool.id) ? `👑 ${tool.label}` : tool.label
+                  )}
                 </Table.ColumnHeaderCell>
               ))}
+              <Table.ColumnHeaderCell className="pugh-add-cell">
+                <button
+                  type="button"
+                  className="pugh-add-button"
+                  aria-label="Add tool"
+                  onClick={handleAddTool}
+                >
+                  +
+                </button>
+              </Table.ColumnHeaderCell>
             </Table.Row>
           </Table.Header>
           <Table.Body>
             {criteria.map((criterion) => (
-              <Table.Row key={criterion}>
-                <Table.RowHeaderCell className="pugh-criterion-cell">{criterion}</Table.RowHeaderCell>
+              <Table.Row key={criterion.id}>
+                <Table.RowHeaderCell
+                  className="pugh-criterion-cell pugh-header-editable"
+                  onClick={() => startEditingHeader('criterion', criterion.id)}
+                >
+                  {isEditingHeaderCell('criterion', criterion.id) ? (
+                    <div className="pugh-header-edit-row" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="text"
+                        aria-label={`Rename criterion ${criterion.label}`}
+                        value={editHeaderValue}
+                        onChange={(e) => setEditHeaderValue(e.target.value)}
+                        onKeyDown={handleHeaderKeyDown}
+                        onBlur={saveHeaderEdit}
+                        className="pugh-header-input"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        className="pugh-header-delete-button"
+                        aria-label={`Delete criterion ${criterion.label}`}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={handleDeleteHeader}
+                      >
+                        🗑
+                      </button>
+                    </div>
+                  ) : (
+                    criterion.label
+                  )}
+                </Table.RowHeaderCell>
                 <Table.Cell className="pugh-weight-cell">
                   <input
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    aria-label={`Weight for ${criterion}`}
-                    value={weights[criterion]}
-                    onChange={(e) => handleWeightChange(criterion, e.target.value)}
+                    aria-label={`Weight for ${criterion.label}`}
+                    value={weights[criterion.id]}
+                    onChange={(e) => handleWeightChange(criterion.id, e.target.value)}
                     className="pugh-weight-input"
                   />
                 </Table.Cell>
                 {tools.map((tool) => {
-                  const cellKey = `${tool}\0${criterion}`;
+                  const cellKey = `${tool.id}\0${criterion.id}`;
                   const entry = latestByCell.get(cellKey);
                   const score = entry?.score;
                   const label = entry?.label;
@@ -252,17 +336,17 @@ export default function PughMatrix({
                     ? getScoreColor(score, isDark)
                     : { bg: 'transparent', text: 'inherit' };
                   const history = historyByCell.get(cellKey);
-                  const editing = isEditing(tool, criterion);
+                  const editing = isEditing(tool.id, criterion.id);
 
                   return (
                     <Table.Cell
-                      key={tool}
-                      className={`pugh-score-cell${onScoreAdd ? ' pugh-score-cell-editable' : ''}${isWinner(tool) ? ' pugh-winner-cell' : isHighlighted(tool) ? ' pugh-highlight-cell' : ''}`}
+                      key={tool.id}
+                      className={`pugh-score-cell pugh-score-cell-editable${isWinner(tool.id) ? ' pugh-winner-cell' : isHighlighted(tool.id) ? ' pugh-highlight-cell' : ''}`}
                       style={{
                         backgroundColor: colors.bg,
                         color: colors.text,
                       }}
-                      onClick={() => handleCellClick(tool, criterion)}
+                      onClick={() => startEditing(tool.id, criterion.id)}
                     >
                       {editing ? (
                         <div
@@ -274,7 +358,7 @@ export default function PughMatrix({
                             inputMode="numeric"
                             pattern="[0-9]*"
                             placeholder="Score 1-10 (optional)"
-                            aria-label={`Score for ${tool}, ${criterion}`}
+                            aria-label={`Score for ${tool.label}, ${criterion.label}`}
                             value={editScore}
                             onChange={(e) => handleEditScoreChange(e.target.value)}
                             onKeyDown={handleEditKeyDown}
@@ -284,7 +368,7 @@ export default function PughMatrix({
                           <input
                             type="text"
                             placeholder="Label (optional)"
-                            aria-label={`Label for ${tool}, ${criterion}`}
+                            aria-label={`Label for ${tool.label}, ${criterion.label}`}
                             value={editLabel}
                             onChange={(e) => setEditLabel(e.target.value)}
                             onKeyDown={handleEditKeyDown}
@@ -293,7 +377,7 @@ export default function PughMatrix({
                           />
                           <textarea
                             placeholder="Comment (optional)"
-                            aria-label={`Comment for ${tool}, ${criterion}`}
+                            aria-label={`Comment for ${tool.label}, ${criterion.label}`}
                             value={editComment}
                             onChange={(e) => setEditComment(e.target.value)}
                             onKeyDown={handleEditKeyDown}
@@ -304,7 +388,7 @@ export default function PughMatrix({
                             <button type="button" onClick={handleEditSave}>
                               Save
                             </button>
-                            <button type="button" onClick={handleEditCancel}>
+                            <button type="button" onClick={cancelEditing}>
                               Cancel
                             </button>
                           </div>
@@ -349,22 +433,35 @@ export default function PughMatrix({
                     </Table.Cell>
                   );
                 })}
+                <Table.Cell />
               </Table.Row>
             ))}
+            <Table.Row>
+              <Table.Cell colSpan={tools.length + 3} className="pugh-add-cell">
+                <button
+                  type="button"
+                  className="pugh-add-button"
+                  aria-label="Add criterion"
+                  onClick={handleAddCriterion}
+                >
+                  +
+                </button>
+              </Table.Cell>
+            </Table.Row>
             {showTotals && (
               <Table.Row className="pugh-total-row">
                 <Table.RowHeaderCell className="pugh-total-label">Weighted Total</Table.RowHeaderCell>
                 <Table.Cell className="pugh-weight-cell" />
                 {tools.map((tool) => {
-                  const total = weightedTotals[tool];
+                  const total = weightedTotals[tool.id];
                   const colors = getScoreColor(
                     (total / maxTotal) * 10,
                     isDark,
                   );
                   return (
                     <Table.Cell
-                      key={tool}
-                      className={`pugh-total-cell${isWinner(tool) ? ' pugh-winner-cell' : isHighlighted(tool) ? ' pugh-highlight-cell' : ''}`}
+                      key={tool.id}
+                      className={`pugh-total-cell${isWinner(tool.id) ? ' pugh-winner-cell' : isHighlighted(tool.id) ? ' pugh-highlight-cell' : ''}`}
                       style={{
                         backgroundColor: colors.bg,
                         color: colors.text,
@@ -374,13 +471,14 @@ export default function PughMatrix({
                     </Table.Cell>
                   );
                 })}
+                <Table.Cell />
               </Table.Row>
             )}
           </Table.Body>
         </Table.Root>
         <button
           className="pugh-toggle-button"
-          onClick={() => setShowTotals((prev) => !prev)}
+          onClick={toggleTotals}
           type="button"
         >
           {showTotals ? 'Hide Totals' : 'Show Totals'}

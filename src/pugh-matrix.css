@@ -89,6 +89,28 @@
   margin-top: 0.1rem;
 }
 
+/* Editable headers */
+.pugh-header-editable {
+  cursor: pointer;
+}
+
+.pugh-header-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.2rem 0.3rem;
+  font-size: inherit;
+  font-weight: inherit;
+  border: 1px solid var(--pugh-primary);
+  border-radius: 4px;
+  background: var(--pugh-bg);
+  color: var(--pugh-text);
+}
+
+.pugh-header-input:focus {
+  outline: 2px solid var(--pugh-primary);
+  outline-offset: -1px;
+}
+
 /* Edit form */
 .pugh-edit-form {
   display: flex;
@@ -205,6 +227,68 @@
 .pugh-toggle-button:hover {
   background: var(--pugh-primary);
   color: #fff;
+}
+
+/* Add cell & button */
+.pugh-add-cell {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.pugh-add-button {
+  display: inline-block;
+  padding: 0.25rem 0.7rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--pugh-primary);
+  background: transparent;
+  border: 1px solid var(--pugh-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.pugh-add-button:hover {
+  background: var(--pugh-primary);
+  color: #fff;
+}
+
+/* Header edit row (input + trash) */
+.pugh-header-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pugh-header-edit-row .pugh-header-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.pugh-header-delete-button {
+  flex-shrink: 0;
+  padding: 0.15rem 0.3rem;
+  font-size: 0.85rem;
+  line-height: 1;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.pugh-header-delete-button:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+}
+
+.pugh-dark .pugh-header-delete-button:hover {
+  background: #451a1a;
+  border-color: #ef4444;
 }
 
 /* Highlighted column */

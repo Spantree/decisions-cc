@@ -5,5 +5,5 @@ export default defineConfig({
   format: ['cjs', 'esm'],
   dts: true,
   clean: true,
-  external: ['react', 'react-dom', '@radix-ui/themes'],
+  external: ['react', 'react-dom', '@radix-ui/themes', 'zustand', 'zustand/middleware'],
 });
