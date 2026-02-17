@@ -4,8 +4,8 @@ import {
   red, tomato, amber, yellow, lime, grass, green,
   greenDark,
 } from '@radix-ui/colors';
-import type { ScoreEntry } from './types';
-import { SCORE_RANGES, LABEL_SETS, labelSetsForRange, formatCount } from './types';
+import type { ScoreEntry, ScaleType } from './types';
+import { getEffectiveScale, normalizeScore, getScoreColor, formatCount, labelSetsForRange, LABEL_SETS } from './types';
 import { usePughStore } from './store/usePughStore';
 import { scoreId, toolId, criterionId } from './ids';
 import './pugh-matrix.css';
@@ -43,18 +43,13 @@ const GRADIENT_DARK = [
   { bg: greenDark.green11, text: greenDark.green1 },
 ];
 
-function getScoreColor(
-  score: number,
-  min: number,
-  max: number,
+function pickColor(
+  gradientIndex: number,
   isDark: boolean,
 ): { bg: string; text: string } {
   const gradient = isDark ? GRADIENT_DARK : GRADIENT_LIGHT;
-  if (min === max) return gradient[Math.floor(gradient.length / 2)];
-  const normalized = (score - min) / (max - min);
-  const clamped = Math.max(0, Math.min(1, normalized));
-  const index = Math.round(clamped * (gradient.length - 1));
-  return gradient[index];
+  const clamped = Math.max(0, Math.min(gradient.length - 1, gradientIndex));
+  return gradient[clamped];
 }
 
 function formatDate(timestamp: number): string {
@@ -63,6 +58,24 @@ function formatDate(timestamp: number): string {
     day: 'numeric',
     year: 'numeric',
   });
+}
+
+function displayScoreValue(score: number, scale: ScaleType): string {
+  switch (scale.kind) {
+    case 'binary':
+      return score ? 'Yes' : 'No';
+    case 'unbounded':
+      return formatCount(score);
+    case 'numeric':
+      return String(score);
+  }
+}
+
+/** Returns the label for a score, checking per-entry override first, then scale defaults. */
+function getScoreLabel(score: number, scale: ScaleType, entryLabel?: string): string | undefined {
+  if (entryLabel) return entryLabel;
+  if (scale.kind === 'numeric' && scale.labels) return scale.labels[score];
+  return undefined;
 }
 
 export default function PughMatrix({
@@ -75,8 +88,10 @@ export default function PughMatrix({
   const tools = usePughStore((s) => s.tools);
   const scores = usePughStore((s) => s.scores);
   const weights = usePughStore((s) => s.weights);
+  const matrixConfig = usePughStore((s) => s.matrixConfig);
   const showTotals = usePughStore((s) => s.showTotals);
   const showWeights = usePughStore((s) => s.showWeights);
+  const showLabels = usePughStore((s) => s.showLabels);
   const editingCell = usePughStore((s) => s.editingCell);
   const editScore = usePughStore((s) => s.editScore);
   const editLabel = usePughStore((s) => s.editLabel);
@@ -90,6 +105,7 @@ export default function PughMatrix({
   const addScore = usePughStore((s) => s.addScore);
   const toggleTotals = usePughStore((s) => s.toggleTotals);
   const toggleWeights = usePughStore((s) => s.toggleWeights);
+  const toggleLabels = usePughStore((s) => s.toggleLabels);
   const addTool = usePughStore((s) => s.addTool);
   const removeTool = usePughStore((s) => s.removeTool);
   const addCriterion = usePughStore((s) => s.addCriterion);
@@ -100,13 +116,19 @@ export default function PughMatrix({
   const cancelEditingHeader = usePughStore((s) => s.cancelEditingHeader);
   const setEditHeaderValue = usePughStore((s) => s.setEditHeaderValue);
   const saveHeaderEdit = usePughStore((s) => s.saveHeaderEdit);
-  const editHeaderRangeId = usePughStore((s) => s.editHeaderRangeId);
+  const editHeaderScaleKind = usePughStore((s) => s.editHeaderScaleKind);
+  const editHeaderScaleMin = usePughStore((s) => s.editHeaderScaleMin);
+  const editHeaderScaleMax = usePughStore((s) => s.editHeaderScaleMax);
+  const editHeaderScaleStep = usePughStore((s) => s.editHeaderScaleStep);
   const editHeaderLabelSetId = usePughStore((s) => s.editHeaderLabelSetId);
-  const setEditHeaderRangeId = usePughStore((s) => s.setEditHeaderRangeId);
+  const setEditHeaderScaleKind = usePughStore((s) => s.setEditHeaderScaleKind);
+  const setEditHeaderScaleMin = usePughStore((s) => s.setEditHeaderScaleMin);
+  const setEditHeaderScaleMax = usePughStore((s) => s.setEditHeaderScaleMax);
+  const setEditHeaderScaleStep = usePughStore((s) => s.setEditHeaderScaleStep);
   const setEditHeaderLabelSetId = usePughStore((s) => s.setEditHeaderLabelSetId);
   const setCriterionScale = usePughStore((s) => s.setCriterionScale);
 
-  const { latestByCell, historyByCell, weightedTotals, maxTotal, winner, maxByCriterion } =
+  const { latestByCell, historyByCell, weightedTotals, maxTotal, winner, allScoresByCriterion } =
     useMemo(() => {
       const toolSet = new Set(tools.map((t) => t.id));
       const criterionSet = new Set(criteria.map((c) => c.id));
@@ -136,17 +158,16 @@ export default function PughMatrix({
         history.set(key, arr.toSorted((a, b) => b.timestamp - a.timestamp));
       }
 
-      // Compute max score per proportional criterion (for normalization)
-      const maxByCrit: Record<string, number> = {};
+      // Collect all scores per criterion (for unbounded normalization)
+      const allByCrit: Record<string, number[]> = {};
       for (const criterion of criteria) {
-        if (!criterion.scoreScale.proportional) continue;
-        let cMax = 0;
+        const critScores: number[] = [];
         for (const tool of tools) {
           const key = `${tool.id}\0${criterion.id}`;
           const e = latest.get(key);
-          if (e?.score != null && e.score > cMax) cMax = e.score;
+          if (e?.score != null) critScores.push(e.score);
         }
-        maxByCrit[criterion.id] = cMax;
+        allByCrit[criterion.id] = critScores;
       }
 
       const totals: Record<string, number> = {};
@@ -159,14 +180,9 @@ export default function PughMatrix({
           const entry = latest.get(key);
           const score = entry?.score ?? 0;
           const weight = weights[criterion.id] ?? 10;
-          let normalized: number;
-          if (criterion.scoreScale.proportional) {
-            const maxInCrit = maxByCrit[criterion.id] ?? 0;
-            normalized = maxInCrit > 0 ? score / maxInCrit : 0;
-          } else {
-            const { min: sMin, max: sMax } = criterion.scoreScale;
-            normalized = sMax !== sMin ? (score - sMin) / (sMax - sMin) : 0.5;
-          }
+          const scale = getEffectiveScale(criterion, matrixConfig.defaultScale);
+          const critScores = allByCrit[criterion.id] ?? [];
+          const normalized = normalizeScore(score, scale, critScores, matrixConfig.allowNegative);
           total += normalized * weight;
         }
         const rounded = Math.round(total);
@@ -183,9 +199,9 @@ export default function PughMatrix({
         weightedTotals: totals,
         maxTotal: max,
         winner: showWinner ? best : null,
-        maxByCriterion: maxByCrit,
+        allScoresByCriterion: allByCrit,
       };
-    }, [scores, tools, criteria, weights, showWinner]);
+    }, [scores, tools, criteria, weights, showWinner, matrixConfig]);
 
   const handleWeightChange = (criterionId: string, value: string) => {
     if (value === '') {
@@ -201,19 +217,27 @@ export default function PughMatrix({
   const editingCriterion = editingCell
     ? criteria.find((c) => c.id === editingCell.criterionId)
     : null;
-  const editingScale = editingCriterion?.scoreScale;
+  const editingScale = editingCriterion
+    ? getEffectiveScale(editingCriterion, matrixConfig.defaultScale)
+    : null;
 
   const handleEditScoreChange = (value: string) => {
+    if (!editingScale) return;
     if (value === '' || value === '-') {
       setEditScore(value);
       return;
     }
-    const num = Math.round(Number(value));
-    if (!isNaN(num) && editingScale) {
-      if (editingScale.proportional) {
-        if (num >= 0) setEditScore(String(num));
-      } else if (num >= editingScale.min && num <= editingScale.max) {
-        setEditScore(String(num));
+    if (editingScale.kind === 'binary') {
+      // handled by toggle, but allow 0/1
+      if (value === '0' || value === '1') setEditScore(value);
+      return;
+    }
+    const num = Number(value);
+    if (!isNaN(num)) {
+      if (editingScale.kind === 'unbounded') {
+        if (num >= 0) setEditScore(value);
+      } else {
+        if (num >= editingScale.min && num <= editingScale.max) setEditScore(value);
       }
     }
   };
@@ -222,10 +246,12 @@ export default function PughMatrix({
     if (!editingCell || !editingScale) return;
     const scoreNum = editScore && editScore !== '-' ? Number(editScore) : undefined;
     if (scoreNum != null) {
-      if (editingScale.proportional) {
+      if (editingScale.kind === 'unbounded') {
         if (isNaN(scoreNum) || scoreNum < 0) return;
-      } else if (isNaN(scoreNum) || scoreNum < editingScale.min || scoreNum > editingScale.max) {
-        return;
+      } else if (editingScale.kind === 'numeric') {
+        if (isNaN(scoreNum) || scoreNum < editingScale.min || scoreNum > editingScale.max) return;
+      } else if (editingScale.kind === 'binary') {
+        if (scoreNum !== 0 && scoreNum !== 1) return;
       }
     }
     const trimmedLabel = editLabel.trim() || undefined;
@@ -253,83 +279,85 @@ export default function PughMatrix({
     }
   };
 
-  const handleHeaderKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      cancelEditingHeader();
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      saveHeaderEdit();
-    }
-  };
+  const handleSaveHeader = () => {
+    if (!editingHeader) return;
 
-  const handleRangeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    if (!editingHeader || editingHeader.type !== 'criterion') return;
+    // For tool headers, just save the rename
+    if (editingHeader.type === 'tool') {
+      saveHeaderEdit();
+      return;
+    }
+
+    // Criterion header: capture old scale before save
     const critId = editingHeader.id;
     const criterion = criteria.find((c) => c.id === critId);
-    if (!criterion) return;
-    const oldScale = criterion.scoreScale;
-    const newRangeId = e.target.value;
-    setEditHeaderRangeId(newRangeId);
-    const availableSets = labelSetsForRange(newRangeId);
-    const firstSet = availableSets[0];
-    if (firstSet) {
-      setEditHeaderLabelSetId(firstSet.id);
-      const range = SCORE_RANGES.find((r) => r.id === newRangeId)!;
-      const isNewProportional = newRangeId === 'proportional';
-      const wasProportional = !!oldScale.proportional;
-      const newScale = {
-        min: range.min,
-        max: range.max,
-        labels: firstSet.labels,
-        ...(isNewProportional ? { proportional: true as const } : {}),
-      };
-      setCriterionScale(critId, newScale);
-      // Rescale existing scores
-      if (wasProportional && !isNewProportional) {
-        // Proportional → fixed: normalize by max in criterion, then map to new range
-        const maxInCrit = maxByCriterion[critId] ?? 0;
-        const newSpan = range.max - range.min;
-        for (const tool of tools) {
-          const cellKey = `${tool.id}\0${critId}`;
-          const entry = latestByCell.get(cellKey);
-          if (entry?.score != null && maxInCrit > 0) {
-            const normalized = entry.score / maxInCrit;
-            const rescaled = Math.round(range.min + normalized * newSpan);
-            const clamped = Math.max(range.min, Math.min(range.max, rescaled));
-            addScore({
-              id: scoreId(),
-              toolId: tool.id,
-              criterionId: critId,
-              score: clamped,
-              label: undefined,
-              comment: undefined,
-              timestamp: Date.now(),
-              user: 'anonymous',
-            });
-          }
+    if (!criterion) { saveHeaderEdit(); return; }
+
+    const oldScale = getEffectiveScale(criterion, matrixConfig.defaultScale);
+    const newKind = editHeaderScaleKind;
+    const nMin = Number(editHeaderScaleMin) || 1;
+    const nMax = Number(editHeaderScaleMax) || 10;
+
+    // Save dispatches rename + scale override + clears edit state
+    saveHeaderEdit();
+
+    // Rescale existing scores when switching between scale types
+    if (oldScale.kind === 'numeric' && newKind === 'binary') {
+      const midpoint = (oldScale.min + oldScale.max) / 2;
+      for (const tool of tools) {
+        const cellKey = `${tool.id}\0${critId}`;
+        const entry = latestByCell.get(cellKey);
+        if (entry?.score != null) {
+          addScore({
+            id: scoreId(), toolId: tool.id, criterionId: critId,
+            score: entry.score > midpoint ? 1 : 0,
+            timestamp: Date.now(), user: 'anonymous',
+          });
         }
-      } else if (!wasProportional && isNewProportional) {
-        // Fixed → proportional: no automatic rescaling — user must enter real counts
-      } else if (oldScale.min !== range.min || oldScale.max !== range.max) {
-        // Fixed → fixed: rescale as before
+      }
+    } else if (oldScale.kind === 'binary' && newKind === 'numeric') {
+      for (const tool of tools) {
+        const cellKey = `${tool.id}\0${critId}`;
+        const entry = latestByCell.get(cellKey);
+        if (entry?.score != null) {
+          addScore({
+            id: scoreId(), toolId: tool.id, criterionId: critId,
+            score: entry.score ? nMax : nMin,
+            timestamp: Date.now(), user: 'anonymous',
+          });
+        }
+      }
+    } else if (oldScale.kind === 'unbounded' && newKind === 'numeric') {
+      const allScores = allScoresByCriterion[critId] ?? [];
+      const maxInCrit = Math.max(0, ...allScores);
+      const span = nMax - nMin;
+      for (const tool of tools) {
+        const cellKey = `${tool.id}\0${critId}`;
+        const entry = latestByCell.get(cellKey);
+        if (entry?.score != null && maxInCrit > 0) {
+          const normalized = entry.score / maxInCrit;
+          const rescaled = Math.round(nMin + normalized * span);
+          addScore({
+            id: scoreId(), toolId: tool.id, criterionId: critId,
+            score: Math.max(nMin, Math.min(nMax, rescaled)),
+            timestamp: Date.now(), user: 'anonymous',
+          });
+        }
+      }
+    } else if (oldScale.kind === 'numeric' && newKind === 'numeric') {
+      if (oldScale.min !== nMin || oldScale.max !== nMax) {
         const oldSpan = oldScale.max - oldScale.min;
-        const newSpan = range.max - range.min;
+        const newSpan = nMax - nMin;
         for (const tool of tools) {
           const cellKey = `${tool.id}\0${critId}`;
           const entry = latestByCell.get(cellKey);
           if (entry?.score != null && oldSpan > 0) {
             const normalized = (entry.score - oldScale.min) / oldSpan;
-            const rescaled = Math.round(range.min + normalized * newSpan);
-            const clamped = Math.max(range.min, Math.min(range.max, rescaled));
+            const rescaled = Math.round(nMin + normalized * newSpan);
             addScore({
-              id: scoreId(),
-              toolId: tool.id,
-              criterionId: critId,
-              score: clamped,
-              label: undefined,
-              comment: undefined,
-              timestamp: Date.now(),
-              user: 'anonymous',
+              id: scoreId(), toolId: tool.id, criterionId: critId,
+              score: Math.max(nMin, Math.min(nMax, rescaled)),
+              timestamp: Date.now(), user: 'anonymous',
             });
           }
         }
@@ -337,21 +365,17 @@ export default function PughMatrix({
     }
   };
 
-  const handleLabelSetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    if (!editingHeader || editingHeader.type !== 'criterion') return;
-    const newLabelSetId = e.target.value;
-    setEditHeaderLabelSetId(newLabelSetId);
-    const ls = LABEL_SETS.find((l) => l.id === newLabelSetId);
-    if (ls) {
-      const range = SCORE_RANGES.find((r) => r.id === editHeaderRangeId)!;
-      const isProportional = editHeaderRangeId === 'proportional';
-      setCriterionScale(editingHeader.id, {
-        min: range.min,
-        max: range.max,
-        labels: ls.labels,
-        ...(isProportional ? { proportional: true as const } : {}),
-      });
+  const handleHeaderKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      cancelEditingHeader();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveHeader();
     }
+  };
+
+  const handleScaleKindChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setEditHeaderScaleKind(e.target.value);
   };
 
   const handleAddTool = () => {
@@ -408,7 +432,7 @@ export default function PughMatrix({
                         value={editHeaderValue}
                         onChange={(e) => setEditHeaderValue(e.target.value)}
                         onKeyDown={handleHeaderKeyDown}
-                        onBlur={saveHeaderEdit}
+                        onBlur={handleSaveHeader}
                         className="pugh-header-input"
                         autoFocus
                       />
@@ -442,7 +466,9 @@ export default function PughMatrix({
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {criteria.map((criterion) => (
+            {criteria.map((criterion) => {
+              const scale = getEffectiveScale(criterion, matrixConfig.defaultScale);
+              return (
               <Table.Row key={criterion.id}>
                 <Table.RowHeaderCell
                   className={`pugh-criterion-cell${!readOnly ? ' pugh-header-editable' : ''}`}
@@ -471,27 +497,77 @@ export default function PughMatrix({
                         </button>
                       </div>
                       <select
-                        aria-label={`Score range for ${criterion.label}`}
+                        aria-label={`Scale type for ${criterion.label}`}
                         className="pugh-header-select"
-                        value={editHeaderRangeId}
-                        onChange={handleRangeChange}
+                        value={editHeaderScaleKind}
+                        onChange={handleScaleKindChange}
                       >
-                        {SCORE_RANGES.map((r) => (
-                          <option key={r.id} value={r.id}>{r.name}</option>
-                        ))}
+                        <option value="numeric">Numeric</option>
+                        <option value="binary">Binary (Yes/No)</option>
+                        <option value="unbounded">Unbounded</option>
                       </select>
-                      <select
-                        aria-label={`Label set for ${criterion.label}`}
-                        className="pugh-header-select"
-                        value={editHeaderLabelSetId}
-                        onChange={handleLabelSetChange}
-                      >
-                        {labelSetsForRange(editHeaderRangeId).map((ls) => (
-                          <option key={ls.id} value={ls.id}>{ls.name}</option>
-                        ))}
-                      </select>
+                      {editHeaderScaleKind === 'numeric' && (
+                        <>
+                        <div className="pugh-scale-params">
+                          <label>
+                            Min
+                            <input
+                              type="number"
+                              aria-label={`Scale min for ${criterion.label}`}
+                              className="pugh-scale-input"
+                              value={editHeaderScaleMin}
+                              onChange={(e) => setEditHeaderScaleMin(e.target.value)}
+                            />
+                          </label>
+                          <label>
+                            Max
+                            <input
+                              type="number"
+                              aria-label={`Scale max for ${criterion.label}`}
+                              className="pugh-scale-input"
+                              value={editHeaderScaleMax}
+                              onChange={(e) => setEditHeaderScaleMax(e.target.value)}
+                            />
+                          </label>
+                          <label>
+                            Step
+                            <input
+                              type="number"
+                              aria-label={`Scale step for ${criterion.label}`}
+                              className="pugh-scale-input"
+                              value={editHeaderScaleStep}
+                              onChange={(e) => setEditHeaderScaleStep(e.target.value)}
+                              min="0.01"
+                              step="any"
+                            />
+                          </label>
+                        </div>
+                        {(() => {
+                          const min = Number(editHeaderScaleMin);
+                          const max = Number(editHeaderScaleMax);
+                          const rangeId = min === 1 && max === 10 ? '1-10'
+                            : min === -2 && max === 2 ? '-2-2'
+                            : null;
+                          if (!rangeId) return null;
+                          const sets = labelSetsForRange(rangeId);
+                          if (sets.length === 0) return null;
+                          return (
+                            <select
+                              aria-label={`Label set for ${criterion.label}`}
+                              className="pugh-header-select"
+                              value={editHeaderLabelSetId}
+                              onChange={(e) => setEditHeaderLabelSetId(e.target.value)}
+                            >
+                              {sets.map((ls) => (
+                                <option key={ls.id} value={ls.id}>{ls.name}</option>
+                              ))}
+                            </select>
+                          );
+                        })()}
+                        </>
+                      )}
                       <div className="pugh-edit-actions">
-                        <button type="button" onClick={saveHeaderEdit}>Save</button>
+                        <button type="button" onClick={handleSaveHeader}>Save</button>
                         <button type="button" onClick={cancelEditingHeader}>Cancel</button>
                       </div>
                     </div>
@@ -518,19 +594,32 @@ export default function PughMatrix({
                   const entry = latestByCell.get(cellKey);
                   const score = entry?.score;
                   const hasScore = score != null;
-                  const isProportional = !!criterion.scoreScale.proportional;
-                  const maxInCrit = maxByCriterion[criterion.id] ?? 0;
-                  const displayLabel = hasScore
-                    ? isProportional
-                      ? (maxInCrit > 0 ? `${Math.round((score / maxInCrit) * 100)}%` : '0%')
-                      : (entry?.label || criterion.scoreScale.labels[score])
-                    : undefined;
-                  const displayScore = hasScore && isProportional ? formatCount(score) : score;
-                  const colors = hasScore
-                    ? isProportional
-                      ? getScoreColor(score, 0, maxInCrit || 1, isDark)
-                      : getScoreColor(score, criterion.scoreScale.min, criterion.scoreScale.max, isDark)
-                    : { bg: 'transparent', text: 'inherit' };
+                  const critScores = allScoresByCriterion[criterion.id] ?? [];
+
+                  // Display value
+                  let displayValue: string | undefined;
+                  let displaySub: string | undefined;
+                  if (hasScore) {
+                    displayValue = displayScoreValue(score, scale);
+                    if (showLabels && scale.kind === 'unbounded') {
+                      const sum = critScores.reduce((a, b) => a + b, 0);
+                      displaySub = sum > 0 ? `${Math.round((score / sum) * 100)}%` : '0%';
+                    } else if (showLabels) {
+                      const label = getScoreLabel(score, scale, entry?.label);
+                      if (label) displaySub = label;
+                    }
+                  }
+
+                  // Color
+                  let colors: { bg: string; text: string };
+                  if (hasScore) {
+                    const normalized = normalizeScore(score, scale, critScores, matrixConfig.allowNegative);
+                    const gradientIdx = getScoreColor(normalized, matrixConfig.allowNegative);
+                    colors = pickColor(gradientIdx, isDark);
+                  } else {
+                    colors = { bg: 'transparent', text: 'inherit' };
+                  }
+
                   const history = historyByCell.get(cellKey);
                   const editing = isEditing(tool.id, criterion.id);
 
@@ -555,34 +644,50 @@ export default function PughMatrix({
                           <span className="pugh-edit-hint">
                             Enter a score or comment
                           </span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            placeholder={editingScale?.proportional ? 'Count (e.g. 228000)' : editingScale ? `Score ${editingScale.min} to ${editingScale.max}` : 'Score'}
-                            aria-label={`Score for ${tool.label}, ${criterion.label}`}
-                            value={editScore}
-                            onChange={(e) => handleEditScoreChange(e.target.value)}
-                            onKeyDown={handleEditKeyDown}
-                            className="pugh-edit-input"
-                            autoFocus
-                          />
-                          {editScore && editScore !== '-' && !editingScale?.proportional && editingScale?.labels[Number(editScore)] && (
-                            <span className="pugh-edit-hint">
-                              = {editingScale.labels[Number(editScore)]}
-                            </span>
+                          {scale.kind === 'binary' ? (
+                            <label className="pugh-binary-toggle">
+                              <input
+                                type="checkbox"
+                                aria-label={`Score for ${tool.label}, ${criterion.label}`}
+                                checked={editScore === '1'}
+                                onChange={(e) => setEditScore(e.target.checked ? '1' : '0')}
+                                onKeyDown={handleEditKeyDown}
+                                autoFocus
+                              />
+                              {editScore === '1' ? 'Yes' : 'No'}
+                            </label>
+                          ) : (
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              placeholder={
+                                scale.kind === 'unbounded'
+                                  ? 'Count (e.g. 228000)'
+                                  : `Score ${scale.min} to ${scale.max}${scale.step !== 1 ? ` (step ${scale.step})` : ''}`
+                              }
+                              aria-label={`Score for ${tool.label}, ${criterion.label}`}
+                              value={editScore}
+                              onChange={(e) => handleEditScoreChange(e.target.value)}
+                              onKeyDown={handleEditKeyDown}
+                              className="pugh-edit-input"
+                              autoFocus
+                            />
                           )}
-                          <input
-                            type="text"
-                            placeholder={editScore && editScore !== '-' && !editingScale?.proportional && editingScale?.labels[Number(editScore)]
-                              ? `Label (default: ${editingScale.labels[Number(editScore)]})`
-                              : 'Label (optional)'}
-                            aria-label={`Label for ${tool.label}, ${criterion.label}`}
-                            value={editLabel}
-                            onChange={(e) => setEditLabel(e.target.value)}
-                            onKeyDown={handleEditKeyDown}
-                            className="pugh-edit-input"
-                            maxLength={30}
-                          />
+                          {scale.kind === 'numeric' && (
+                            <input
+                              type="text"
+                              placeholder={
+                                scale.labels && editScore && scale.labels[Number(editScore)]
+                                  ? `Label (default: ${scale.labels[Number(editScore)]})`
+                                  : 'Label (optional)'
+                              }
+                              aria-label={`Label for ${tool.label}, ${criterion.label}`}
+                              value={editLabel}
+                              onChange={(e) => setEditLabel(e.target.value)}
+                              onKeyDown={handleEditKeyDown}
+                              className="pugh-edit-input"
+                            />
+                          )}
                           <textarea
                             placeholder="Comment (optional)"
                             aria-label={`Comment for ${tool.label}, ${criterion.label}`}
@@ -607,9 +712,9 @@ export default function PughMatrix({
                             <span className="pugh-score-trigger">
                               {hasScore ? (
                                 <>
-                                  <span className="pugh-score-number">{displayScore}</span>
-                                  {displayLabel ? (
-                                    <span className="pugh-score-label">{displayLabel}</span>
+                                  <span className="pugh-score-number">{displayValue}</span>
+                                  {displaySub ? (
+                                    <span className="pugh-score-label">{displaySub}</span>
                                   ) : null}
                                 </>
                               ) : (
@@ -619,15 +724,13 @@ export default function PughMatrix({
                           </HoverCard.Trigger>
                           <HoverCard.Content size="1" maxWidth="280px">
                             {history.map((h) => {
-                              const hScore = h.score != null && isProportional ? formatCount(h.score) : h.score;
-                              const hLabel = h.score != null
-                                ? (h.label || (isProportional ? undefined : criterion.scoreScale.labels[h.score]))
-                                : undefined;
+                              const hDisplay = h.score != null ? displayScoreValue(h.score, scale) : undefined;
+                              const hLabel = h.score != null ? getScoreLabel(h.score, scale, h.label) : undefined;
                               return (
                               <div key={h.id} className="pugh-history-entry">
                                 {h.score != null ? (
                                   <div className="pugh-history-score">
-                                    {hScore}{hLabel ? ` — ${hLabel}` : ''}
+                                    {hDisplay}{hLabel ? ` — ${hLabel}` : ''}
                                   </div>
                                 ) : null}
                                 {h.comment ? (
@@ -650,7 +753,8 @@ export default function PughMatrix({
                 })}
                 {!readOnly && <Table.Cell />}
               </Table.Row>
-            ))}
+              );
+            })}
             {showTotals && (
               <Table.Row className="pugh-total-row">
                 <Table.RowHeaderCell className="pugh-total-label">Weighted Total</Table.RowHeaderCell>
@@ -658,7 +762,7 @@ export default function PughMatrix({
                 {tools.map((tool) => {
                   const total = weightedTotals[tool.id];
                   const colors = maxTotal > 0
-                    ? getScoreColor(total, 0, maxTotal, isDark)
+                    ? pickColor(Math.round((total / maxTotal) * 9), isDark)
                     : { bg: 'transparent', text: 'inherit' };
                   return (
                     <Table.Cell
@@ -711,6 +815,13 @@ export default function PughMatrix({
               type="button"
             >
               {showTotals ? 'Hide Totals' : 'Show Totals'}
+            </button>
+            <button
+              className="pugh-toggle-button"
+              onClick={toggleLabels}
+              type="button"
+            >
+              {showLabels ? 'Hide Labels' : 'Show Labels'}
             </button>
           </>
         )}

@@ -1,10 +1,12 @@
 export type {
   PughEvent,
   Branch,
+  MatrixCreated,
+  MatrixDefaultScaleSet,
   CriterionAdded,
   CriterionRenamed,
   CriterionRemoved,
-  CriterionScaleChanged,
+  CriterionScaleOverridden,
   ToolAdded,
   ToolRenamed,
   ToolRemoved,

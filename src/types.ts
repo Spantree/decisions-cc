@@ -1,13 +1,15 @@
-export interface ScoreScale {
-  min: number;
-  max: number;
-  labels: Record<number, string>;
-  proportional?: boolean;  // when true, scores are raw counts, normalized at display time
-}
+// --- Scale Type union ---
 
-export const SCALE_1_10: ScoreScale = {
+export type ScaleType =
+  | { kind: 'numeric'; min: number; max: number; step: number; labels?: Record<number, string> }
+  | { kind: 'binary' }
+  | { kind: 'unbounded' };
+
+export const DEFAULT_SCALE: ScaleType = {
+  kind: 'numeric',
   min: 1,
   max: 10,
+  step: 1,
   labels: {
     1: 'Poor',
     2: 'Below Avg',
@@ -22,9 +24,14 @@ export const SCALE_1_10: ScoreScale = {
   },
 };
 
-export const SCALE_NEG2_POS2: ScoreScale = {
+// Convenience aliases matching old presets
+export const SCALE_1_10: ScaleType = DEFAULT_SCALE;
+
+export const SCALE_NEG2_POS2: ScaleType = {
+  kind: 'numeric',
   min: -2,
   max: 2,
+  step: 1,
   labels: {
     [-2]: 'Poor',
     [-1]: 'Below Avg',
@@ -33,8 +40,6 @@ export const SCALE_NEG2_POS2: ScoreScale = {
     [2]: 'Outstanding',
   },
 };
-
-export const DEFAULT_SCALE: ScoreScale = SCALE_1_10;
 
 // --- Score Range & Label Set presets ---
 
@@ -63,7 +68,10 @@ export const LABELS_QUALITY_1_10: LabelSet = {
   id: 'quality-1-10',
   name: 'Quality',
   rangeId: '1-10',
-  labels: { ...SCALE_1_10.labels },
+  labels: {
+    1: 'Poor', 2: 'Below Avg', 3: 'Fair', 4: 'Below Avg+', 5: 'Average',
+    6: 'Above Avg', 7: 'Good', 8: 'Very Good', 9: 'Excellent', 10: 'Outstanding',
+  },
 };
 
 export const LABELS_COST_1_10: LabelSet = {
@@ -71,16 +79,8 @@ export const LABELS_COST_1_10: LabelSet = {
   name: 'Cost',
   rangeId: '1-10',
   labels: {
-    1: 'Enterprise',
-    2: 'Very Expensive',
-    3: 'Expensive',
-    4: 'Pricey',
-    5: 'Moderate',
-    6: 'Affordable',
-    7: 'Cheap',
-    8: 'Very Cheap',
-    9: 'Nearly Free',
-    10: 'Free',
+    1: 'Enterprise', 2: 'Very Expensive', 3: 'Expensive', 4: 'Pricey', 5: 'Moderate',
+    6: 'Affordable', 7: 'Cheap', 8: 'Very Cheap', 9: 'Nearly Free', 10: 'Free',
   },
 };
 
@@ -89,16 +89,8 @@ export const LABELS_EASE_1_10: LabelSet = {
   name: 'Ease of Use',
   rangeId: '1-10',
   labels: {
-    1: 'Very Hard',
-    2: 'Hard',
-    3: 'Difficult',
-    4: 'Tricky',
-    5: 'Moderate',
-    6: 'Manageable',
-    7: 'Easy',
-    8: 'Very Easy',
-    9: 'Intuitive',
-    10: 'Effortless',
+    1: 'Very Hard', 2: 'Hard', 3: 'Difficult', 4: 'Tricky', 5: 'Moderate',
+    6: 'Manageable', 7: 'Easy', 8: 'Very Easy', 9: 'Intuitive', 10: 'Effortless',
   },
 };
 
@@ -107,16 +99,8 @@ export const LABELS_COMMUNITY_1_10: LabelSet = {
   name: 'Community',
   rangeId: '1-10',
   labels: {
-    1: 'None',
-    2: 'Minimal',
-    3: 'Small',
-    4: 'Growing',
-    5: 'Moderate',
-    6: 'Active',
-    7: 'Strong',
-    8: 'Very Strong',
-    9: 'Thriving',
-    10: 'Massive',
+    1: 'None', 2: 'Minimal', 3: 'Small', 4: 'Growing', 5: 'Moderate',
+    6: 'Active', 7: 'Strong', 8: 'Very Strong', 9: 'Thriving', 10: 'Massive',
   },
 };
 
@@ -125,16 +109,9 @@ export const LABELS_AGREEMENT_1_10: LabelSet = {
   name: 'Agreement',
   rangeId: '1-10',
   labels: {
-    1: 'Strongly Disagree',
-    2: 'Disagree',
-    3: 'Mostly Disagree',
-    4: 'Slightly Disagree',
-    5: 'Neutral',
-    6: 'Slightly Agree',
-    7: 'Mostly Agree',
-    8: 'Agree',
-    9: 'Strongly Agree',
-    10: 'Fully Agree',
+    1: 'Strongly Disagree', 2: 'Disagree', 3: 'Mostly Disagree', 4: 'Slightly Disagree',
+    5: 'Neutral', 6: 'Slightly Agree', 7: 'Mostly Agree', 8: 'Agree',
+    9: 'Strongly Agree', 10: 'Fully Agree',
   },
 };
 
@@ -151,7 +128,7 @@ export const LABELS_QUALITY_NEG2_POS2: LabelSet = {
   id: 'quality-neg2-pos2',
   name: 'Quality',
   rangeId: '-2-2',
-  labels: { ...SCALE_NEG2_POS2.labels },
+  labels: { [-2]: 'Poor', [-1]: 'Below Avg', [0]: 'Average', [1]: 'Good', [2]: 'Outstanding' },
 };
 
 export const LABELS_COST_NEG2_POS2: LabelSet = {
@@ -226,40 +203,13 @@ export function labelSetsForRange(rangeId: string): LabelSet[] {
   return LABEL_SETS.filter((ls) => ls.rangeId === rangeId);
 }
 
-export function formatCount(n: number): string {
-  if (n >= 1_000_000) {
-    const m = n / 1_000_000;
-    return m % 1 === 0 ? `${m}M` : `${parseFloat(m.toFixed(1))}M`;
-  }
-  if (n >= 1_000) {
-    const k = n / 1_000;
-    return k % 1 === 0 ? `${k}k` : `${parseFloat(k.toFixed(1))}k`;
-  }
-  return String(n);
-}
-
-export function findRange(scale: ScoreScale): ScoreRange | undefined {
-  if (scale.proportional) return RANGE_PROPORTIONAL;
-  return SCORE_RANGES.find((r) => r.min === scale.min && r.max === scale.max);
-}
-
-export function findLabelSet(scale: ScoreScale): LabelSet | undefined {
-  const range = findRange(scale);
-  if (!range) return undefined;
-  return LABEL_SETS.find((ls) => {
-    if (ls.rangeId !== range.id) return false;
-    const scaleKeys = Object.keys(scale.labels);
-    const lsKeys = Object.keys(ls.labels);
-    if (scaleKeys.length !== lsKeys.length) return false;
-    return scaleKeys.every((k) => scale.labels[Number(k)] === ls.labels[Number(k)]);
-  });
-}
+// --- Domain types ---
 
 export interface Criterion {
   id: string;
   label: string;
   user: string;
-  scoreScale: ScoreScale;
+  scale?: ScaleType;  // optional; falls back to matrix default
 }
 
 export interface Tool {
@@ -278,4 +228,111 @@ export interface ScoreEntry {
   comment?: string;
   timestamp: number;
   user: string;
+}
+
+// --- Matrix config ---
+
+export interface MatrixConfig {
+  allowNegative: boolean;
+  defaultScale: ScaleType;
+}
+
+export const DEFAULT_MATRIX_CONFIG: MatrixConfig = {
+  allowNegative: false,
+  defaultScale: DEFAULT_SCALE,
+};
+
+// --- Normalization ---
+
+export function normalizeScore(
+  score: number,
+  scale: ScaleType,
+  allScores: number[],
+  allowNegative: boolean,
+): number {
+  switch (scale.kind) {
+    case 'numeric': {
+      const { min, max } = scale;
+      if (max === min) return allowNegative ? 0 : 0.5;
+      const ratio = (score - min) / (max - min);
+      if (allowNegative) return 2 * ratio - 1;
+      return ratio;
+    }
+    case 'binary':
+      return score ? 1.0 : 0.0;
+    case 'unbounded': {
+      // Proportional: normalize by max in criterion (highest = 1.0)
+      const maxVal = Math.max(0, ...allScores);
+      return maxVal > 0 ? score / maxVal : 0;
+    }
+  }
+}
+
+// --- Color ---
+
+export function getScoreColor(
+  normalizedRatio: number,
+  allowNegative: boolean,
+): number {
+  // Maps a normalized ratio to a gradient index [0, 9]
+  // For unsigned: ratio [0, 1] → index [0, 9]
+  // For signed: ratio [-1, 1] → index [0, 9]
+  let clamped: number;
+  if (allowNegative) {
+    clamped = Math.max(-1, Math.min(1, normalizedRatio));
+    clamped = (clamped + 1) / 2; // map [-1,1] → [0,1]
+  } else {
+    clamped = Math.max(0, Math.min(1, normalizedRatio));
+  }
+  return Math.round(clamped * 9);
+}
+
+// --- Utility ---
+
+export function formatCount(n: number): string {
+  if (n >= 1_000_000) {
+    const m = n / 1_000_000;
+    return m % 1 === 0 ? `${m}M` : `${parseFloat(m.toFixed(1))}M`;
+  }
+  if (n >= 1_000) {
+    const k = n / 1_000;
+    return k % 1 === 0 ? `${k}k` : `${parseFloat(k.toFixed(1))}k`;
+  }
+  return String(n);
+}
+
+// --- Scale helpers ---
+
+export function getEffectiveScale(criterion: Criterion, matrixDefault: ScaleType): ScaleType {
+  return criterion.scale ?? matrixDefault;
+}
+
+export function scaleLabel(scale: ScaleType): string {
+  switch (scale.kind) {
+    case 'numeric':
+      return `Numeric (${scale.min} to ${scale.max}${scale.step !== 1 ? `, step ${scale.step}` : ''})`;
+    case 'binary':
+      return 'Binary (Yes/No)';
+    case 'unbounded':
+      return 'Unbounded';
+  }
+}
+
+export function findRange(scale: ScaleType): ScoreRange | undefined {
+  if (scale.kind === 'unbounded') return RANGE_PROPORTIONAL;
+  if (scale.kind === 'binary') return undefined;
+  return SCORE_RANGES.find((r) => r.min === scale.min && r.max === scale.max);
+}
+
+export function findLabelSet(scale: ScaleType): LabelSet | undefined {
+  if (scale.kind !== 'numeric' || !scale.labels) return undefined;
+  const range = findRange(scale);
+  if (!range) return undefined;
+  return LABEL_SETS.find((ls) => {
+    if (ls.rangeId !== range.id) return false;
+    const scaleKeys = Object.keys(scale.labels!);
+    const lsKeys = Object.keys(ls.labels);
+    if (scaleKeys.length !== lsKeys.length) return false;
+    return scaleKeys.every((k) => scale.labels![Number(k)] === ls.labels[Number(k)]);
+  });
 }

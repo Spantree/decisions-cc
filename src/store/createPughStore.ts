@@ -1,7 +1,7 @@
 import { createStore, type StateCreator } from 'zustand/vanilla';
 import { devtools, persist, createJSONStorage } from 'zustand/middleware';
-import type { Criterion, Tool, ScoreEntry, ScoreScale } from '../types';
-import { DEFAULT_SCALE, RANGE_1_10, LABELS_QUALITY_1_10, findRange, findLabelSet, labelSetsForRange } from '../types';
+import type { Criterion, Tool, ScoreEntry, ScaleType } from '../types';
+import { DEFAULT_SCALE, getEffectiveScale, findLabelSet, labelSetsForRange, LABELS_QUALITY_1_10, LABEL_SETS } from '../types';
 import type { Persister } from '../persist/types';
 import type { PughStore, PughDomainState } from './types';
 import type { PughEvent, Branch } from '../events/types';
@@ -34,6 +34,37 @@ function makeEvent(type: PughEvent['type'], payload: Record<string, unknown>): P
     type,
     ...payload,
   } as PughEvent;
+}
+
+function scaleToEditState(scale: ScaleType): {
+  editHeaderScaleKind: string;
+  editHeaderScaleMin: string;
+  editHeaderScaleMax: string;
+  editHeaderScaleStep: string;
+} {
+  switch (scale.kind) {
+    case 'numeric':
+      return {
+        editHeaderScaleKind: 'numeric',
+        editHeaderScaleMin: String(scale.min),
+        editHeaderScaleMax: String(scale.max),
+        editHeaderScaleStep: String(scale.step),
+      };
+    case 'binary':
+      return {
+        editHeaderScaleKind: 'binary',
+        editHeaderScaleMin: '0',
+        editHeaderScaleMax: '1',
+        editHeaderScaleStep: '1',
+      };
+    case 'unbounded':
+      return {
+        editHeaderScaleKind: 'unbounded',
+        editHeaderScaleMin: '0',
+        editHeaderScaleMax: '',
+        editHeaderScaleStep: '1',
+      };
+  }
 }
 
 export function createPughStore(options: CreatePughStoreOptions = {}) {
@@ -138,13 +169,17 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
     // UI state
     showTotals: false,
     showWeights: false,
+    showLabels: false,
     editingCell: null,
     editScore: '',
     editLabel: '',
     editComment: '',
     editingHeader: null,
     editHeaderValue: '',
-    editHeaderRangeId: RANGE_1_10.id,
+    editHeaderScaleKind: 'numeric',
+    editHeaderScaleMin: '1',
+    editHeaderScaleMax: '10',
+    editHeaderScaleStep: '1',
     editHeaderLabelSetId: LABELS_QUALITY_1_10.id,
 
     // Domain actions (thin wrappers around dispatch)
@@ -174,15 +209,19 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
     },
 
     addCriterion: (id: string, label: string) => {
-      get().dispatch(makeEvent('CriterionAdded', { criterionId: id, label, scoreScale: DEFAULT_SCALE }));
+      get().dispatch(makeEvent('CriterionAdded', { criterionId: id, label }));
     },
 
     removeCriterion: (id: string) => {
       get().dispatch(makeEvent('CriterionRemoved', { criterionId: id }));
     },
 
-    setCriterionScale: (id: string, scale: ScoreScale) => {
-      get().dispatch(makeEvent('CriterionScaleChanged', { criterionId: id, scoreScale: scale }));
+    setCriterionScale: (id: string, scale: ScaleType) => {
+      get().dispatch(makeEvent('CriterionScaleOverridden', { criterionId: id, scale }));
+    },
+
+    setMatrixDefaultScale: (scale: ScaleType) => {
+      get().dispatch(makeEvent('MatrixDefaultScaleSet', { defaultScale: scale }));
     },
 
     renameTool: (id: string, newLabel: string) => {
@@ -198,6 +237,8 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
     toggleTotals: () => set((state) => ({ showTotals: !state.showTotals }), false, 'toggleTotals'),
     setShowWeights: (show: boolean) => set(() => ({ showWeights: show }), false, { type: 'setShowWeights', show }),
     toggleWeights: () => set((state) => ({ showWeights: !state.showWeights }), false, 'toggleWeights'),
+    setShowLabels: (show: boolean) => set(() => ({ showLabels: show }), false, { type: 'setShowLabels', show }),
+    toggleLabels: () => set((state) => ({ showLabels: !state.showLabels }), false, 'toggleLabels'),
     startEditing: (toolId: string, criterionId: string) =>
       set(() => ({
         editingCell: { toolId, criterionId },
@@ -213,17 +254,21 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
       set((state) => {
         const items = type === 'tool' ? state.tools : state.criteria;
         const item = items.find((i) => i.id === id);
-        let rangeId = RANGE_1_10.id;
+        let scaleState = scaleToEditState(DEFAULT_SCALE);
         let labelSetId = LABELS_QUALITY_1_10.id;
         if (type === 'criterion') {
           const criterion = state.criteria.find((c) => c.id === id);
           if (criterion) {
-            const range = findRange(criterion.scoreScale);
-            if (range) rangeId = range.id;
-            const ls = findLabelSet(criterion.scoreScale);
-            if (ls) labelSetId = ls.id;
-            else {
-              const fallback = labelSetsForRange(rangeId);
+            const effective = getEffectiveScale(criterion, state.matrixConfig.defaultScale);
+            scaleState = scaleToEditState(effective);
+            const ls = findLabelSet(effective);
+            if (ls) {
+              labelSetId = ls.id;
+            } else {
+              const range = effective.kind === 'numeric'
+                ? `${effective.min === 1 && effective.max === 10 ? '1-10' : effective.min === -2 && effective.max === 2 ? '-2-2' : ''}`
+                : effective.kind === 'unbounded' ? 'proportional' : '';
+              const fallback = range ? labelSetsForRange(range) : [];
               if (fallback.length > 0) labelSetId = fallback[0].id;
             }
           }
@@ -231,18 +276,24 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
         return {
           editingHeader: { type, id },
           editHeaderValue: item?.label ?? '',
-          editHeaderRangeId: rangeId,
           editHeaderLabelSetId: labelSetId,
+          ...scaleState,
         };
       }, false, { type: 'startEditingHeader', headerType: type, id }),
     cancelEditingHeader: () => set(() => ({
       editingHeader: null,
       editHeaderValue: '',
-      editHeaderRangeId: RANGE_1_10.id,
+      editHeaderScaleKind: 'numeric',
+      editHeaderScaleMin: '1',
+      editHeaderScaleMax: '10',
+      editHeaderScaleStep: '1',
       editHeaderLabelSetId: LABELS_QUALITY_1_10.id,
     }), false, 'cancelEditingHeader'),
     setEditHeaderValue: (editHeaderValue: string) => set(() => ({ editHeaderValue }), false, { type: 'setEditHeaderValue', editHeaderValue }),
-    setEditHeaderRangeId: (editHeaderRangeId: string) => set(() => ({ editHeaderRangeId }), false, { type: 'setEditHeaderRangeId', editHeaderRangeId }),
+    setEditHeaderScaleKind: (editHeaderScaleKind: string) => set(() => ({ editHeaderScaleKind }), false, { type: 'setEditHeaderScaleKind', editHeaderScaleKind }),
+    setEditHeaderScaleMin: (editHeaderScaleMin: string) => set(() => ({ editHeaderScaleMin }), false, { type: 'setEditHeaderScaleMin', editHeaderScaleMin }),
+    setEditHeaderScaleMax: (editHeaderScaleMax: string) => set(() => ({ editHeaderScaleMax }), false, { type: 'setEditHeaderScaleMax', editHeaderScaleMax }),
+    setEditHeaderScaleStep: (editHeaderScaleStep: string) => set(() => ({ editHeaderScaleStep }), false, { type: 'setEditHeaderScaleStep', editHeaderScaleStep }),
     setEditHeaderLabelSetId: (editHeaderLabelSetId: string) => set(() => ({ editHeaderLabelSetId }), false, { type: 'setEditHeaderLabelSetId', editHeaderLabelSetId }),
     saveHeaderEdit: () => {
       const state = get();
@@ -254,6 +305,25 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
         state.dispatch(makeEvent('ToolRenamed', { toolId: id, newLabel: trimmed }));
       } else {
         state.dispatch(makeEvent('CriterionRenamed', { criterionId: id, newLabel: trimmed }));
+        // Build the new scale from edit state and dispatch scale change
+        let newScale: ScaleType;
+        switch (state.editHeaderScaleKind) {
+          case 'binary':
+            newScale = { kind: 'binary' };
+            break;
+          case 'unbounded':
+            newScale = { kind: 'unbounded' };
+            break;
+          default: {
+            const min = Number(state.editHeaderScaleMin) || 1;
+            const max = Number(state.editHeaderScaleMax) || 10;
+            const step = Number(state.editHeaderScaleStep) || 1;
+            const ls = LABEL_SETS.find((l) => l.id === state.editHeaderLabelSetId);
+            newScale = { kind: 'numeric', min, max, step, labels: ls?.labels };
+            break;
+          }
+        }
+        state.dispatch(makeEvent('CriterionScaleOverridden', { criterionId: id, scale: newScale }));
       }
       set({ editingHeader: null, editHeaderValue: '' }, false, 'saveHeaderEdit');
     },
@@ -269,7 +339,7 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
     devtools(
       persist(storeCreator, {
         name: persistKey,
-        version: 3,
+        version: 4,
         storage: createPughStorageAdapter(persister),
         partialize: (state) =>
           ({
@@ -277,6 +347,55 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
             branches: state.branches,
             activeBranchId: state.activeBranchId,
           }) as unknown as PughStore,
+        migrate: (persisted: unknown, version: number) => {
+          const state = persisted as Record<string, unknown>;
+          if (version < 4 && state.eventsByBranch) {
+            // Migrate events: convert old ScoreScale/CriterionScaleChanged to new types
+            const eventsByBranch = state.eventsByBranch as Record<string, unknown[]>;
+            for (const branchId of Object.keys(eventsByBranch)) {
+              eventsByBranch[branchId] = (eventsByBranch[branchId] as Record<string, unknown>[]).map((evt) => {
+                // Convert CriterionScaleChanged → CriterionScaleOverridden
+                if (evt.type === 'CriterionScaleChanged') {
+                  const oldScale = evt.scoreScale as Record<string, unknown> | undefined;
+                  let newScale: ScaleType;
+                  if (oldScale?.proportional) {
+                    newScale = { kind: 'unbounded' };
+                  } else if (oldScale) {
+                    newScale = {
+                      kind: 'numeric',
+                      min: (oldScale.min as number) ?? 1,
+                      max: (oldScale.max as number) ?? 10,
+                      step: 1,
+                      labels: (oldScale.labels as Record<number, string>) ?? undefined,
+                    };
+                  } else {
+                    newScale = { kind: 'numeric', min: 1, max: 10, step: 1 };
+                  }
+                  return { ...evt, type: 'CriterionScaleOverridden', scale: newScale, scoreScale: undefined };
+                }
+                // Convert CriterionAdded scoreScale → scale
+                if (evt.type === 'CriterionAdded' && evt.scoreScale) {
+                  const oldScale = evt.scoreScale as Record<string, unknown>;
+                  let newScale: ScaleType;
+                  if (oldScale.proportional) {
+                    newScale = { kind: 'unbounded' };
+                  } else {
+                    newScale = {
+                      kind: 'numeric',
+                      min: (oldScale.min as number) ?? 1,
+                      max: (oldScale.max as number) ?? 10,
+                      step: 1,
+                      labels: (oldScale.labels as Record<number, string>) ?? undefined,
+                    };
+                  }
+                  return { ...evt, scale: newScale, scoreScale: undefined };
+                }
+                return evt;
+              });
+            }
+          }
+          return state as unknown as PughStore;
+        },
         merge: (persisted, current) => {
           const merged = { ...current, ...(persisted as Partial<PughStore>) };
           if (merged.eventsByBranch && merged.activeBranchId) {

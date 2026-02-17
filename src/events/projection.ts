@@ -1,21 +1,34 @@
 import type { PughDomainState } from '../store/types';
 import type { PughEvent } from './types';
-import { DEFAULT_SCALE } from '../types';
+import { DEFAULT_MATRIX_CONFIG } from '../types';
+import type { MatrixConfig } from '../types';
 
 export function projectEvents(events: PughEvent[]): PughDomainState {
   const criteria: PughDomainState['criteria'] = [];
   const tools: PughDomainState['tools'] = [];
   const scores: PughDomainState['scores'] = [];
   const weights: Record<string, number> = {};
+  let matrixConfig: MatrixConfig = { ...DEFAULT_MATRIX_CONFIG };
 
   for (const event of events) {
     switch (event.type) {
+      case 'MatrixCreated':
+        matrixConfig = {
+          allowNegative: event.allowNegative,
+          defaultScale: event.defaultScale,
+        };
+        break;
+
+      case 'MatrixDefaultScaleSet':
+        matrixConfig = { ...matrixConfig, defaultScale: event.defaultScale };
+        break;
+
       case 'CriterionAdded':
         criteria.push({
           id: event.criterionId,
           label: event.label,
           user: event.user,
-          scoreScale: event.scoreScale ?? DEFAULT_SCALE,
+          scale: event.scale,
         });
         weights[event.criterionId] = 10;
         break;
@@ -29,10 +42,10 @@ export function projectEvents(events: PughEvent[]): PughDomainState {
         }
         break;
 
-      case 'CriterionScaleChanged':
+      case 'CriterionScaleOverridden':
         for (let i = 0; i < criteria.length; i++) {
           if (criteria[i].id === event.criterionId) {
-            criteria[i] = { ...criteria[i], scoreScale: event.scoreScale };
+            criteria[i] = { ...criteria[i], scale: event.scale };
             break;
           }
         }
@@ -91,5 +104,5 @@ export function projectEvents(events: PughEvent[]): PughDomainState {
     }
   }
 
-  return { criteria, tools, scores, weights };
+  return { criteria, tools, scores, weights, matrixConfig };
 }

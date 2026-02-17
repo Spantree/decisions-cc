@@ -7,29 +7,20 @@ import { PughStoreProvider } from './store/PughStoreProvider';
 import { createLocalStoragePersister } from './persist/localStoragePersister';
 import { scoreId } from './ids';
 import './pugh-matrix.css';
-import type { Criterion, Tool, ScoreEntry, ScoreScale } from './types';
-import {
-  SCALE_1_10, SCALE_NEG2_POS2,
-  LABELS_COST_1_10, LABELS_EASE_1_10, LABELS_COMMUNITY_1_10,
-} from './types';
+import type { Criterion, Tool, ScoreEntry, ScaleType } from './types';
+import { DEFAULT_SCALE, SCALE_NEG2_POS2 } from './types';
 
-const PROPORTIONAL_SCALE: ScoreScale = {
-  min: 0,
-  max: Number.MAX_SAFE_INTEGER,
-  labels: {},
-  proportional: true,
-};
-
-const costScale = { min: 1, max: 10, labels: LABELS_COST_1_10.labels };
-const easeScale = { min: 1, max: 10, labels: LABELS_EASE_1_10.labels };
-const communityScale = { min: 1, max: 10, labels: LABELS_COMMUNITY_1_10.labels };
+const NUMERIC_1_10: ScaleType = DEFAULT_SCALE;
+const NUMERIC_NEG2_POS2: ScaleType = SCALE_NEG2_POS2;
+const UNBOUNDED: ScaleType = { kind: 'unbounded' };
+const BINARY: ScaleType = { kind: 'binary' };
 
 const criteria: Criterion[] = [
-  { id: 'cost', label: 'Cost', user: 'alice', scoreScale: costScale },
-  { id: 'performance', label: 'Performance', user: 'alice', scoreScale: SCALE_1_10 },
-  { id: 'ease-of-use', label: 'Ease of Use', user: 'alice', scoreScale: easeScale },
-  { id: 'community', label: 'Community Support', user: 'alice', scoreScale: communityScale },
-  { id: 'docs', label: 'Documentation', user: 'alice', scoreScale: SCALE_1_10 },
+  { id: 'cost', label: 'Cost', user: 'alice', scale: NUMERIC_1_10 },
+  { id: 'performance', label: 'Performance', user: 'alice', scale: NUMERIC_1_10 },
+  { id: 'ease-of-use', label: 'Ease of Use', user: 'alice', scale: NUMERIC_1_10 },
+  { id: 'community', label: 'Community Support', user: 'alice', scale: NUMERIC_1_10 },
+  { id: 'docs', label: 'Documentation', user: 'alice', scale: NUMERIC_1_10 },
 ];
 const tools: Tool[] = [
   { id: 'react', label: 'React', user: 'alice' },
@@ -46,16 +37,18 @@ function entry(
   criterionId: string,
   score: number,
   timestamp: number,
-  labelOrComment?: string,
-  comment?: string,
+  commentOrLabel?: string,
+  label?: string,
 ): ScoreEntry {
+  // If both args provided: commentOrLabel is comment, label is label.
+  // If only one arg: it's a comment (backward compat with existing calls).
   return {
     id: scoreId(),
     toolId,
     criterionId,
     score,
-    label: labelOrComment,
-    comment,
+    comment: commentOrLabel,
+    label,
     timestamp,
     user: 'alice',
   };
@@ -82,41 +75,41 @@ const t2 = 1707686400000; // Feb 12, 2024
 const t3 = 1707772800000; // Feb 13, 2024
 
 const scores: ScoreEntry[] = [
-  // React — all from label sets
-  entry(reactTool.id, costCri.id, 10, t1),              // Cost: "Free"
-  entry(reactTool.id, perfCri.id, 7, t1),               // Quality: "Good"
-  entry(reactTool.id, eouCri.id, 6, t1),                // Ease: "Manageable"
-  entry(reactTool.id, commCri.id, 10, t1),              // Community: "Massive"
-  entry(reactTool.id, docsCri.id, 8, t1),               // Quality: "Very Good"
+  // React
+  entry(reactTool.id, costCri.id, 10, t1),
+  entry(reactTool.id, perfCri.id, 7, t1),
+  entry(reactTool.id, eouCri.id, 6, t1),
+  entry(reactTool.id, commCri.id, 10, t1),
+  entry(reactTool.id, docsCri.id, 8, t1),
 
-  // Vue — all from label sets
-  entry(vueTool.id, costCri.id, 10, t1),                // Cost: "Free"
-  entry(vueTool.id, perfCri.id, 8, t1),                 // Quality: "Very Good"
-  entry(vueTool.id, eouCri.id, 9, t1),                  // Ease: "Intuitive"
-  entry(vueTool.id, commCri.id, 7, t1),                 // Community: "Strong"
-  entry(vueTool.id, docsCri.id, 9, t1),                 // Quality: "Excellent"
+  // Vue
+  entry(vueTool.id, costCri.id, 10, t1),
+  entry(vueTool.id, perfCri.id, 8, t1),
+  entry(vueTool.id, eouCri.id, 9, t1),
+  entry(vueTool.id, commCri.id, 7, t1),
+  entry(vueTool.id, docsCri.id, 9, t1),
 
-  // Svelte — one override on performance
-  entry(svelteTool.id, costCri.id, 10, t1),             // Cost: "Free"
-  entry(svelteTool.id, perfCri.id, 10, t1, 'Fastest'),  // override: "Fastest" instead of "Outstanding"
-  entry(svelteTool.id, eouCri.id, 8, t1),               // Ease: "Very Easy"
-  entry(svelteTool.id, commCri.id, 5, t1),              // Community: "Moderate"
-  entry(svelteTool.id, docsCri.id, 7, t1),              // Quality: "Good"
+  // Svelte
+  entry(svelteTool.id, costCri.id, 10, t1),
+  entry(svelteTool.id, perfCri.id, 10, t1),
+  entry(svelteTool.id, eouCri.id, 8, t1),
+  entry(svelteTool.id, commCri.id, 5, t1),
+  entry(svelteTool.id, docsCri.id, 7, t1),
 
-  // Angular — one override on ease-of-use
-  entry(angularTool.id, costCri.id, 8, t1),             // Cost: "Very Cheap"
-  entry(angularTool.id, perfCri.id, 6, t1),             // Quality: "Above Avg"
-  entry(angularTool.id, eouCri.id, 4, t1, 'Steep learning curve'),  // override
-  entry(angularTool.id, commCri.id, 8, t1),             // Community: "Very Strong"
-  entry(angularTool.id, docsCri.id, 8, t1),             // Quality: "Very Good"
+  // Angular
+  entry(angularTool.id, costCri.id, 8, t1),
+  entry(angularTool.id, perfCri.id, 6, t1),
+  entry(angularTool.id, eouCri.id, 4, t1),
+  entry(angularTool.id, commCri.id, 8, t1),
+  entry(angularTool.id, docsCri.id, 8, t1),
 ];
 
 // Scores with history: some cells have revised entries
 const scoresWithHistory: ScoreEntry[] = [
   ...scores,
-  entry(reactTool.id, costCri.id, 7, t2, undefined, 'Hidden infra costs'),    // Cost: "Cheap" — downgraded from Free
-  entry(reactTool.id, perfCri.id, 8, t2, undefined, 'After React 19 release'), // Quality: "Very Good" from label set
-  entry(svelteTool.id, commCri.id, 7, t2, 'Growing Fast', 'SvelteKit adoption boosted ecosystem'),  // override
+  entry(reactTool.id, costCri.id, 7, t2, 'Hidden infra costs'),
+  entry(reactTool.id, perfCri.id, 8, t2, 'After React 19 release'),
+  entry(svelteTool.id, commCri.id, 7, t2, 'SvelteKit adoption boosted ecosystem'),
 ];
 
 // Scores with dialog: comment-only follow-ups that don't overwrite scores
@@ -278,9 +271,9 @@ export const ReadOnly: Story = {
 /* ------------------------------------------------------------------ */
 
 const criteriaNeg2: Criterion[] = [
-  { id: 'cost', label: 'Cost', user: 'alice', scoreScale: SCALE_NEG2_POS2 },
-  { id: 'performance', label: 'Performance', user: 'alice', scoreScale: SCALE_NEG2_POS2 },
-  { id: 'ease-of-use', label: 'Ease of Use', user: 'alice', scoreScale: SCALE_NEG2_POS2 },
+  { id: 'cost', label: 'Cost', user: 'alice', scale: NUMERIC_NEG2_POS2 },
+  { id: 'performance', label: 'Performance', user: 'alice', scale: NUMERIC_NEG2_POS2 },
+  { id: 'ease-of-use', label: 'Ease of Use', user: 'alice', scale: NUMERIC_NEG2_POS2 },
 ];
 
 const scoresNeg2: ScoreEntry[] = [
@@ -298,7 +291,7 @@ const scoresNeg2: ScoreEntry[] = [
   entry(angularTool.id, 'ease-of-use', -1, t1),
 ];
 
-/** Criteria using the -2 to +2 scale (Poor to Outstanding). */
+/** Criteria using the -2 to +2 scale. */
 export const Neg2ToPos2Scale: Story = {
   render: () => {
     const store = useMemo(
@@ -366,16 +359,16 @@ export const WithLocalStorage: Story = {
 };
 
 /* ------------------------------------------------------------------ */
-/*  Proportional scale story                                           */
+/*  Unbounded (proportional) scale story                               */
 /* ------------------------------------------------------------------ */
 
-const criteriaProportional: Criterion[] = [
-  { id: 'stars', label: 'GitHub Stars', user: 'alice', scoreScale: PROPORTIONAL_SCALE },
-  { id: 'downloads', label: 'npm Weekly Downloads', user: 'alice', scoreScale: PROPORTIONAL_SCALE },
-  { id: 'bundle', label: 'Bundle Size (KB)', user: 'alice', scoreScale: PROPORTIONAL_SCALE },
+const criteriaUnbounded: Criterion[] = [
+  { id: 'stars', label: 'GitHub Stars', user: 'alice', scale: UNBOUNDED },
+  { id: 'downloads', label: 'npm Weekly Downloads', user: 'alice', scale: UNBOUNDED },
+  { id: 'bundle', label: 'Bundle Size (KB)', user: 'alice', scale: UNBOUNDED },
 ];
 
-const scoresProportional: ScoreEntry[] = [
+const scoresUnbounded: ScoreEntry[] = [
   // GitHub Stars
   entry(reactTool.id, 'stars', 228000, t1),
   entry(vueTool.id, 'stars', 208000, t1),
@@ -395,13 +388,204 @@ const scoresProportional: ScoreEntry[] = [
   entry(angularTool.id, 'bundle', 143, t1),
 ];
 
-/** Proportional scale — raw counts are normalized at display time; highest value = 100%. */
-export const ProportionalScale: Story = {
+/** Unbounded scale — raw counts normalized at display time; share of total shown as %. */
+export const UnboundedScale: Story = {
   render: () => {
     const store = useMemo(
-      () => createPughStore({ criteria: criteriaProportional, tools, scores: scoresProportional }),
+      () => createPughStore({ criteria: criteriaUnbounded, tools, scores: scoresUnbounded }),
       [],
     );
+    return (
+      <PughStoreProvider store={store}>
+        <PughMatrix showWinner />
+      </PughStoreProvider>
+    );
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/*  Binary scale story                                                 */
+/* ------------------------------------------------------------------ */
+
+const criteriaBinary: Criterion[] = [
+  { id: 'ssr', label: 'SSR Support', user: 'alice', scale: BINARY },
+  { id: 'typescript', label: 'TypeScript Built-in', user: 'alice', scale: BINARY },
+  { id: 'mobile', label: 'Mobile Framework', user: 'alice', scale: BINARY },
+  { id: 'oss', label: 'Open Source', user: 'alice', scale: BINARY },
+];
+
+const scoresBinary: ScoreEntry[] = [
+  entry(reactTool.id, 'ssr', 1, t1),
+  entry(reactTool.id, 'typescript', 0, t1),
+  entry(reactTool.id, 'mobile', 1, t1),
+  entry(reactTool.id, 'oss', 1, t1),
+
+  entry(vueTool.id, 'ssr', 1, t1),
+  entry(vueTool.id, 'typescript', 0, t1),
+  entry(vueTool.id, 'mobile', 0, t1),
+  entry(vueTool.id, 'oss', 1, t1),
+
+  entry(svelteTool.id, 'ssr', 1, t1),
+  entry(svelteTool.id, 'typescript', 1, t1),
+  entry(svelteTool.id, 'mobile', 0, t1),
+  entry(svelteTool.id, 'oss', 1, t1),
+
+  entry(angularTool.id, 'ssr', 1, t1),
+  entry(angularTool.id, 'typescript', 1, t1),
+  entry(angularTool.id, 'mobile', 1, t1),
+  entry(angularTool.id, 'oss', 1, t1),
+];
+
+/** Binary scale — yes/no criteria scored as 1/0. */
+export const BinaryScale: Story = {
+  render: () => {
+    const store = useMemo(
+      () => createPughStore({ criteria: criteriaBinary, tools, scores: scoresBinary }),
+      [],
+    );
+    return (
+      <PughStoreProvider store={store}>
+        <PughMatrix showWinner />
+      </PughStoreProvider>
+    );
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/*  Decimal step story                                                 */
+/* ------------------------------------------------------------------ */
+
+const HALF_STEP: ScaleType = { kind: 'numeric', min: 0, max: 5, step: 0.5 };
+const TENTH_STEP: ScaleType = { kind: 'numeric', min: 0, max: 10, step: 0.1 };
+
+const criteriaDecimal: Criterion[] = [
+  { id: 'rating', label: 'User Rating (0-5)', user: 'alice', scale: HALF_STEP },
+  { id: 'latency', label: 'Latency Score (0-10)', user: 'alice', scale: TENTH_STEP },
+];
+
+const scoresDecimal: ScoreEntry[] = [
+  entry(reactTool.id, 'rating', 4.5, t1),
+  entry(reactTool.id, 'latency', 7.3, t1),
+  entry(vueTool.id, 'rating', 4.0, t1),
+  entry(vueTool.id, 'latency', 8.1, t1),
+  entry(svelteTool.id, 'rating', 5.0, t1),
+  entry(svelteTool.id, 'latency', 9.2, t1),
+  entry(angularTool.id, 'rating', 3.5, t1),
+  entry(angularTool.id, 'latency', 6.5, t1),
+];
+
+/** Decimal step scales — criteria with step 0.5 and step 0.1. */
+export const DecimalStep: Story = {
+  render: () => {
+    const store = useMemo(
+      () => createPughStore({ criteria: criteriaDecimal, tools, scores: scoresDecimal }),
+      [],
+    );
+    return (
+      <PughStoreProvider store={store}>
+        <PughMatrix showWinner />
+      </PughStoreProvider>
+    );
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/*  Mixed scales story                                                 */
+/* ------------------------------------------------------------------ */
+
+const criteriaMixed: Criterion[] = [
+  { id: 'cost', label: 'Cost', user: 'alice', scale: NUMERIC_1_10 },
+  { id: 'ssr', label: 'SSR Support', user: 'alice', scale: BINARY },
+  { id: 'stars', label: 'GitHub Stars', user: 'alice', scale: UNBOUNDED },
+  { id: 'rating', label: 'User Rating (0-5)', user: 'alice', scale: HALF_STEP },
+];
+
+const scoresMixed: ScoreEntry[] = [
+  entry(reactTool.id, 'cost', 10, t1),
+  entry(reactTool.id, 'ssr', 1, t1),
+  entry(reactTool.id, 'stars', 228000, t1),
+  entry(reactTool.id, 'rating', 4.5, t1),
+
+  entry(vueTool.id, 'cost', 10, t1),
+  entry(vueTool.id, 'ssr', 1, t1),
+  entry(vueTool.id, 'stars', 208000, t1),
+  entry(vueTool.id, 'rating', 4.0, t1),
+
+  entry(svelteTool.id, 'cost', 10, t1),
+  entry(svelteTool.id, 'ssr', 1, t1),
+  entry(svelteTool.id, 'stars', 80000, t1),
+  entry(svelteTool.id, 'rating', 5.0, t1),
+
+  entry(angularTool.id, 'cost', 8, t1),
+  entry(angularTool.id, 'ssr', 1, t1),
+  entry(angularTool.id, 'stars', 96000, t1),
+  entry(angularTool.id, 'rating', 3.5, t1),
+];
+
+/** Mixed scales — matrix combining numeric, binary, unbounded, and decimal criteria. */
+export const MixedScales: Story = {
+  render: () => {
+    const store = useMemo(
+      () => createPughStore({ criteria: criteriaMixed, tools, scores: scoresMixed }),
+      [],
+    );
+    return (
+      <PughStoreProvider store={store}>
+        <PughMatrix showWinner />
+      </PughStoreProvider>
+    );
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/*  Signed scale story                                                 */
+/* ------------------------------------------------------------------ */
+
+const SIGNED_NEG5_POS5: ScaleType = { kind: 'numeric', min: -5, max: 5, step: 1 };
+
+const criteriaSigned: Criterion[] = [
+  { id: 'impact', label: 'Impact', user: 'alice', scale: SIGNED_NEG5_POS5 },
+  { id: 'risk', label: 'Risk', user: 'alice', scale: SIGNED_NEG5_POS5 },
+  { id: 'effort', label: 'Effort', user: 'alice', scale: SIGNED_NEG5_POS5 },
+];
+
+const scoresSigned: ScoreEntry[] = [
+  entry(reactTool.id, 'impact', 4, t1),
+  entry(reactTool.id, 'risk', -2, t1),
+  entry(reactTool.id, 'effort', -1, t1),
+
+  entry(vueTool.id, 'impact', 3, t1),
+  entry(vueTool.id, 'risk', 1, t1),
+  entry(vueTool.id, 'effort', 2, t1),
+
+  entry(svelteTool.id, 'impact', 5, t1),
+  entry(svelteTool.id, 'risk', -3, t1),
+  entry(svelteTool.id, 'effort', -4, t1),
+
+  entry(angularTool.id, 'impact', 0, t1),
+  entry(angularTool.id, 'risk', -5, t1),
+  entry(angularTool.id, 'effort', 3, t1),
+];
+
+/** Signed scale — matrix with allowNegative and -5 to +5 range. Negative=red, zero=yellow, positive=green. */
+export const SignedScale: Story = {
+  render: () => {
+    // We need to create a store and manually dispatch MatrixCreated to set allowNegative
+    const store = useMemo(() => {
+      const s = createPughStore({ criteria: criteriaSigned, tools, scores: scoresSigned });
+      // Dispatch a MatrixDefaultScaleSet is not needed since criteria have explicit scales.
+      // We need to set allowNegative. We'll dispatch a MatrixCreated event.
+      s.getState().dispatch({
+        id: 'evt_signed-init',
+        type: 'MatrixCreated',
+        title: 'Signed Scale Demo',
+        allowNegative: true,
+        defaultScale: SIGNED_NEG5_POS5,
+        timestamp: Date.now(),
+        user: 'system',
+      });
+      return s;
+    }, []);
     return (
       <PughStoreProvider store={store}>
         <PughMatrix showWinner />

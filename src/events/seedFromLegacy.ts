@@ -19,7 +19,7 @@ export function seedEventsFromOptions(opts: SeedOptions): PughEvent[] {
       type: 'CriterionAdded',
       criterionId: c.id,
       label: c.label,
-      scoreScale: c.scoreScale,
+      scale: c.scale,
       timestamp: now,
       user: c.user,
     });

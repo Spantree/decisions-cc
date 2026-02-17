@@ -1,4 +1,4 @@
-import type { ScoreScale } from '../types';
+import type { ScaleType } from '../types';
 
 interface PughEventBase {
   id: string;
@@ -6,11 +6,24 @@ interface PughEventBase {
   user: string;
 }
 
+export interface MatrixCreated extends PughEventBase {
+  type: 'MatrixCreated';
+  title: string;
+  description?: string;
+  allowNegative: boolean;
+  defaultScale: ScaleType;
+}
+
+export interface MatrixDefaultScaleSet extends PughEventBase {
+  type: 'MatrixDefaultScaleSet';
+  defaultScale: ScaleType;
+}
+
 export interface CriterionAdded extends PughEventBase {
   type: 'CriterionAdded';
   criterionId: string;
   label: string;
-  scoreScale?: ScoreScale;
+  scale?: ScaleType;
 }
 
 export interface CriterionRenamed extends PughEventBase {
@@ -24,10 +37,10 @@ export interface CriterionRemoved extends PughEventBase {
   criterionId: string;
 }
 
-export interface CriterionScaleChanged extends PughEventBase {
-  type: 'CriterionScaleChanged';
+export interface CriterionScaleOverridden extends PughEventBase {
+  type: 'CriterionScaleOverridden';
   criterionId: string;
-  scoreScale: ScoreScale;
+  scale: ScaleType;
 }
 
 export interface ToolAdded extends PughEventBase {
@@ -64,10 +77,12 @@ export interface WeightSet extends PughEventBase {
 }
 
 export type PughEvent =
+  | MatrixCreated
+  | MatrixDefaultScaleSet
   | CriterionAdded
   | CriterionRenamed
   | CriterionRemoved
-  | CriterionScaleChanged
+  | CriterionScaleOverridden
   | ToolAdded
   | ToolRenamed
   | ToolRemoved

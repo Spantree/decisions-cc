@@ -289,6 +289,56 @@
   outline-offset: -1px;
 }
 
+/* Scale parameter inputs (min/max/step) */
+.pugh-scale-params {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.pugh-scale-params label {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.pugh-scale-input {
+  width: 52px;
+  box-sizing: border-box;
+  padding: 0.2rem 0.3rem;
+  font-size: inherit;
+  border: 1px solid var(--pugh-border-color);
+  border-radius: 4px;
+  background: var(--pugh-bg);
+  color: var(--pugh-text);
+}
+
+.pugh-scale-input:focus {
+  outline: 2px solid var(--pugh-primary);
+  outline-offset: -1px;
+}
+
+/* Binary toggle in edit form */
+.pugh-binary-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.2rem 0;
+}
+
+.pugh-binary-toggle input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  cursor: pointer;
+  accent-color: var(--pugh-primary);
+}
+
 /* Header edit row (input + trash) */
 .pugh-header-edit-row {
   display: flex;
