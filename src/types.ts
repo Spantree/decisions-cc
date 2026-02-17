@@ -2,6 +2,7 @@ export interface ScoreScale {
   min: number;
   max: number;
   labels: Record<number, string>;
+  proportional?: boolean;  // when true, scores are raw counts, normalized at display time
 }
 
 export const SCALE_1_10: ScoreScale = {
@@ -53,7 +54,8 @@ export interface LabelSet {
 
 export const RANGE_1_10: ScoreRange = { id: '1-10', name: '1 to 10', min: 1, max: 10 };
 export const RANGE_NEG2_POS2: ScoreRange = { id: '-2-2', name: '-2 to +2', min: -2, max: 2 };
-export const SCORE_RANGES: ScoreRange[] = [RANGE_1_10, RANGE_NEG2_POS2];
+export const RANGE_PROPORTIONAL: ScoreRange = { id: 'proportional', name: 'Proportional', min: 0, max: Number.MAX_SAFE_INTEGER };
+export const SCORE_RANGES: ScoreRange[] = [RANGE_1_10, RANGE_NEG2_POS2, RANGE_PROPORTIONAL];
 
 // --- 1-10 label sets ---
 
@@ -187,6 +189,22 @@ export const LABELS_NONE_NEG2_POS2: LabelSet = {
   labels: {},
 };
 
+// --- Proportional label sets ---
+
+export const LABELS_COUNT_PROPORTIONAL: LabelSet = {
+  id: 'count-proportional',
+  name: 'Count + %',
+  rangeId: 'proportional',
+  labels: {},
+};
+
+export const LABELS_NONE_PROPORTIONAL: LabelSet = {
+  id: 'none-proportional',
+  name: 'None',
+  rangeId: 'proportional',
+  labels: {},
+};
+
 export const LABEL_SETS: LabelSet[] = [
   LABELS_QUALITY_1_10,
   LABELS_COST_1_10,
@@ -200,13 +218,28 @@ export const LABEL_SETS: LabelSet[] = [
   LABELS_COMMUNITY_NEG2_POS2,
   LABELS_AGREEMENT_NEG2_POS2,
   LABELS_NONE_NEG2_POS2,
+  LABELS_COUNT_PROPORTIONAL,
+  LABELS_NONE_PROPORTIONAL,
 ];
 
 export function labelSetsForRange(rangeId: string): LabelSet[] {
   return LABEL_SETS.filter((ls) => ls.rangeId === rangeId);
 }
 
+export function formatCount(n: number): string {
+  if (n >= 1_000_000) {
+    const m = n / 1_000_000;
+    return m % 1 === 0 ? `${m}M` : `${parseFloat(m.toFixed(1))}M`;
+  }
+  if (n >= 1_000) {
+    const k = n / 1_000;
+    return k % 1 === 0 ? `${k}k` : `${parseFloat(k.toFixed(1))}k`;
+  }
+  return String(n);
+}
+
 export function findRange(scale: ScoreScale): ScoreRange | undefined {
+  if (scale.proportional) return RANGE_PROPORTIONAL;
   return SCORE_RANGES.find((r) => r.min === scale.min && r.max === scale.max);
 }
 

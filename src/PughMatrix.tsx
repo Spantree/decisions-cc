@@ -5,7 +5,7 @@ import {
   greenDark,
 } from '@radix-ui/colors';
 import type { ScoreEntry } from './types';
-import { SCORE_RANGES, LABEL_SETS, labelSetsForRange } from './types';
+import { SCORE_RANGES, LABEL_SETS, labelSetsForRange, formatCount } from './types';
 import { usePughStore } from './store/usePughStore';
 import { scoreId, toolId, criterionId } from './ids';
 import './pugh-matrix.css';
@@ -106,7 +106,7 @@ export default function PughMatrix({
   const setEditHeaderLabelSetId = usePughStore((s) => s.setEditHeaderLabelSetId);
   const setCriterionScale = usePughStore((s) => s.setCriterionScale);
 
-  const { latestByCell, historyByCell, weightedTotals, maxTotal, winner } =
+  const { latestByCell, historyByCell, weightedTotals, maxTotal, winner, maxByCriterion } =
     useMemo(() => {
       const toolSet = new Set(tools.map((t) => t.id));
       const criterionSet = new Set(criteria.map((c) => c.id));
@@ -136,6 +136,19 @@ export default function PughMatrix({
         history.set(key, arr.toSorted((a, b) => b.timestamp - a.timestamp));
       }
 
+      // Compute max score per proportional criterion (for normalization)
+      const maxByCrit: Record<string, number> = {};
+      for (const criterion of criteria) {
+        if (!criterion.scoreScale.proportional) continue;
+        let cMax = 0;
+        for (const tool of tools) {
+          const key = `${tool.id}\0${criterion.id}`;
+          const e = latest.get(key);
+          if (e?.score != null && e.score > cMax) cMax = e.score;
+        }
+        maxByCrit[criterion.id] = cMax;
+      }
+
       const totals: Record<string, number> = {};
       let max = -Infinity;
       let best = '';
@@ -146,8 +159,14 @@ export default function PughMatrix({
           const entry = latest.get(key);
           const score = entry?.score ?? 0;
           const weight = weights[criterion.id] ?? 10;
-          const { min: sMin, max: sMax } = criterion.scoreScale;
-          const normalized = sMax !== sMin ? (score - sMin) / (sMax - sMin) : 0.5;
+          let normalized: number;
+          if (criterion.scoreScale.proportional) {
+            const maxInCrit = maxByCrit[criterion.id] ?? 0;
+            normalized = maxInCrit > 0 ? score / maxInCrit : 0;
+          } else {
+            const { min: sMin, max: sMax } = criterion.scoreScale;
+            normalized = sMax !== sMin ? (score - sMin) / (sMax - sMin) : 0.5;
+          }
           total += normalized * weight;
         }
         const rounded = Math.round(total);
@@ -164,6 +183,7 @@ export default function PughMatrix({
         weightedTotals: totals,
         maxTotal: max,
         winner: showWinner ? best : null,
+        maxByCriterion: maxByCrit,
       };
     }, [scores, tools, criteria, weights, showWinner]);
 
@@ -189,15 +209,25 @@ export default function PughMatrix({
       return;
     }
     const num = Math.round(Number(value));
-    if (!isNaN(num) && editingScale && num >= editingScale.min && num <= editingScale.max) {
-      setEditScore(String(num));
+    if (!isNaN(num) && editingScale) {
+      if (editingScale.proportional) {
+        if (num >= 0) setEditScore(String(num));
+      } else if (num >= editingScale.min && num <= editingScale.max) {
+        setEditScore(String(num));
+      }
     }
   };
 
   const handleEditSave = () => {
     if (!editingCell || !editingScale) return;
     const scoreNum = editScore && editScore !== '-' ? Number(editScore) : undefined;
-    if (scoreNum != null && (isNaN(scoreNum) || scoreNum < editingScale.min || scoreNum > editingScale.max)) return;
+    if (scoreNum != null) {
+      if (editingScale.proportional) {
+        if (isNaN(scoreNum) || scoreNum < 0) return;
+      } else if (isNaN(scoreNum) || scoreNum < editingScale.min || scoreNum > editingScale.max) {
+        return;
+      }
+    }
     const trimmedLabel = editLabel.trim() || undefined;
     const trimmedComment = editComment.trim() || undefined;
     if (scoreNum == null && !trimmedComment) return;
@@ -245,9 +275,43 @@ export default function PughMatrix({
     if (firstSet) {
       setEditHeaderLabelSetId(firstSet.id);
       const range = SCORE_RANGES.find((r) => r.id === newRangeId)!;
-      setCriterionScale(critId, { min: range.min, max: range.max, labels: firstSet.labels });
-      // Rescale existing scores from old range to new range
-      if (oldScale.min !== range.min || oldScale.max !== range.max) {
+      const isNewProportional = newRangeId === 'proportional';
+      const wasProportional = !!oldScale.proportional;
+      const newScale = {
+        min: range.min,
+        max: range.max,
+        labels: firstSet.labels,
+        ...(isNewProportional ? { proportional: true as const } : {}),
+      };
+      setCriterionScale(critId, newScale);
+      // Rescale existing scores
+      if (wasProportional && !isNewProportional) {
+        // Proportional → fixed: normalize by max in criterion, then map to new range
+        const maxInCrit = maxByCriterion[critId] ?? 0;
+        const newSpan = range.max - range.min;
+        for (const tool of tools) {
+          const cellKey = `${tool.id}\0${critId}`;
+          const entry = latestByCell.get(cellKey);
+          if (entry?.score != null && maxInCrit > 0) {
+            const normalized = entry.score / maxInCrit;
+            const rescaled = Math.round(range.min + normalized * newSpan);
+            const clamped = Math.max(range.min, Math.min(range.max, rescaled));
+            addScore({
+              id: scoreId(),
+              toolId: tool.id,
+              criterionId: critId,
+              score: clamped,
+              label: undefined,
+              comment: undefined,
+              timestamp: Date.now(),
+              user: 'anonymous',
+            });
+          }
+        }
+      } else if (!wasProportional && isNewProportional) {
+        // Fixed → proportional: no automatic rescaling — user must enter real counts
+      } else if (oldScale.min !== range.min || oldScale.max !== range.max) {
+        // Fixed → fixed: rescale as before
         const oldSpan = oldScale.max - oldScale.min;
         const newSpan = range.max - range.min;
         for (const tool of tools) {
@@ -280,7 +344,13 @@ export default function PughMatrix({
     const ls = LABEL_SETS.find((l) => l.id === newLabelSetId);
     if (ls) {
       const range = SCORE_RANGES.find((r) => r.id === editHeaderRangeId)!;
-      setCriterionScale(editingHeader.id, { min: range.min, max: range.max, labels: ls.labels });
+      const isProportional = editHeaderRangeId === 'proportional';
+      setCriterionScale(editingHeader.id, {
+        min: range.min,
+        max: range.max,
+        labels: ls.labels,
+        ...(isProportional ? { proportional: true as const } : {}),
+      });
     }
   };
 
@@ -448,11 +518,18 @@ export default function PughMatrix({
                   const entry = latestByCell.get(cellKey);
                   const score = entry?.score;
                   const hasScore = score != null;
+                  const isProportional = !!criterion.scoreScale.proportional;
+                  const maxInCrit = maxByCriterion[criterion.id] ?? 0;
                   const displayLabel = hasScore
-                    ? (entry?.label || criterion.scoreScale.labels[score])
+                    ? isProportional
+                      ? (maxInCrit > 0 ? `${Math.round((score / maxInCrit) * 100)}%` : '0%')
+                      : (entry?.label || criterion.scoreScale.labels[score])
                     : undefined;
+                  const displayScore = hasScore && isProportional ? formatCount(score) : score;
                   const colors = hasScore
-                    ? getScoreColor(score, criterion.scoreScale.min, criterion.scoreScale.max, isDark)
+                    ? isProportional
+                      ? getScoreColor(score, 0, maxInCrit || 1, isDark)
+                      : getScoreColor(score, criterion.scoreScale.min, criterion.scoreScale.max, isDark)
                     : { bg: 'transparent', text: 'inherit' };
                   const history = historyByCell.get(cellKey);
                   const editing = isEditing(tool.id, criterion.id);
@@ -481,7 +558,7 @@ export default function PughMatrix({
                           <input
                             type="text"
                             inputMode="numeric"
-                            placeholder={editingScale ? `Score ${editingScale.min} to ${editingScale.max}` : 'Score'}
+                            placeholder={editingScale?.proportional ? 'Count (e.g. 228000)' : editingScale ? `Score ${editingScale.min} to ${editingScale.max}` : 'Score'}
                             aria-label={`Score for ${tool.label}, ${criterion.label}`}
                             value={editScore}
                             onChange={(e) => handleEditScoreChange(e.target.value)}
@@ -489,14 +566,14 @@ export default function PughMatrix({
                             className="pugh-edit-input"
                             autoFocus
                           />
-                          {editScore && editScore !== '-' && editingScale?.labels[Number(editScore)] && (
+                          {editScore && editScore !== '-' && !editingScale?.proportional && editingScale?.labels[Number(editScore)] && (
                             <span className="pugh-edit-hint">
                               = {editingScale.labels[Number(editScore)]}
                             </span>
                           )}
                           <input
                             type="text"
-                            placeholder={editScore && editScore !== '-' && editingScale?.labels[Number(editScore)]
+                            placeholder={editScore && editScore !== '-' && !editingScale?.proportional && editingScale?.labels[Number(editScore)]
                               ? `Label (default: ${editingScale.labels[Number(editScore)]})`
                               : 'Label (optional)'}
                             aria-label={`Label for ${tool.label}, ${criterion.label}`}
@@ -530,7 +607,7 @@ export default function PughMatrix({
                             <span className="pugh-score-trigger">
                               {hasScore ? (
                                 <>
-                                  <span className="pugh-score-number">{score}</span>
+                                  <span className="pugh-score-number">{displayScore}</span>
                                   {displayLabel ? (
                                     <span className="pugh-score-label">{displayLabel}</span>
                                   ) : null}
@@ -542,14 +619,15 @@ export default function PughMatrix({
                           </HoverCard.Trigger>
                           <HoverCard.Content size="1" maxWidth="280px">
                             {history.map((h) => {
+                              const hScore = h.score != null && isProportional ? formatCount(h.score) : h.score;
                               const hLabel = h.score != null
-                                ? (h.label || criterion.scoreScale.labels[h.score])
+                                ? (h.label || (isProportional ? undefined : criterion.scoreScale.labels[h.score]))
                                 : undefined;
                               return (
                               <div key={h.id} className="pugh-history-entry">
                                 {h.score != null ? (
                                   <div className="pugh-history-score">
-                                    {h.score}{hLabel ? ` — ${hLabel}` : ''}
+                                    {hScore}{hLabel ? ` — ${hLabel}` : ''}
                                   </div>
                                 ) : null}
                                 {h.comment ? (

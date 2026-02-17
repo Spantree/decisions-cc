@@ -7,11 +7,18 @@ import { PughStoreProvider } from './store/PughStoreProvider';
 import { createLocalStoragePersister } from './persist/localStoragePersister';
 import { scoreId } from './ids';
 import './pugh-matrix.css';
-import type { Criterion, Tool, ScoreEntry } from './types';
+import type { Criterion, Tool, ScoreEntry, ScoreScale } from './types';
 import {
   SCALE_1_10, SCALE_NEG2_POS2,
   LABELS_COST_1_10, LABELS_EASE_1_10, LABELS_COMMUNITY_1_10,
 } from './types';
+
+const PROPORTIONAL_SCALE: ScoreScale = {
+  min: 0,
+  max: Number.MAX_SAFE_INTEGER,
+  labels: {},
+  proportional: true,
+};
 
 const costScale = { min: 1, max: 10, labels: LABELS_COST_1_10.labels };
 const easeScale = { min: 1, max: 10, labels: LABELS_EASE_1_10.labels };
@@ -354,6 +361,51 @@ export const WithLocalStorage: Story = {
           />
         </PughStoreProvider>
       </div>
+    );
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/*  Proportional scale story                                           */
+/* ------------------------------------------------------------------ */
+
+const criteriaProportional: Criterion[] = [
+  { id: 'stars', label: 'GitHub Stars', user: 'alice', scoreScale: PROPORTIONAL_SCALE },
+  { id: 'downloads', label: 'npm Weekly Downloads', user: 'alice', scoreScale: PROPORTIONAL_SCALE },
+  { id: 'bundle', label: 'Bundle Size (KB)', user: 'alice', scoreScale: PROPORTIONAL_SCALE },
+];
+
+const scoresProportional: ScoreEntry[] = [
+  // GitHub Stars
+  entry(reactTool.id, 'stars', 228000, t1),
+  entry(vueTool.id, 'stars', 208000, t1),
+  entry(svelteTool.id, 'stars', 80000, t1),
+  entry(angularTool.id, 'stars', 96000, t1),
+
+  // npm Weekly Downloads
+  entry(reactTool.id, 'downloads', 25000000, t1),
+  entry(vueTool.id, 'downloads', 4500000, t1),
+  entry(svelteTool.id, 'downloads', 900000, t1),
+  entry(angularTool.id, 'downloads', 3200000, t1),
+
+  // Bundle Size (KB)
+  entry(reactTool.id, 'bundle', 42, t1),
+  entry(vueTool.id, 'bundle', 33, t1),
+  entry(svelteTool.id, 'bundle', 2, t1),
+  entry(angularTool.id, 'bundle', 143, t1),
+];
+
+/** Proportional scale — raw counts are normalized at display time; highest value = 100%. */
+export const ProportionalScale: Story = {
+  render: () => {
+    const store = useMemo(
+      () => createPughStore({ criteria: criteriaProportional, tools, scores: scoresProportional }),
+      [],
+    );
+    return (
+      <PughStoreProvider store={store}>
+        <PughMatrix showWinner />
+      </PughStoreProvider>
     );
   },
 };
