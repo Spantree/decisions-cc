@@ -727,7 +727,14 @@
     color 0.15s ease;
 }
 
-.pugh-custom-edit-button:hover {
+.pugh-custom-edit-button:hover:not(:disabled) {
   background: var(--pugh-primary);
   color: #fff;
+}
+
+.pugh-custom-edit-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: var(--pugh-border-color);
+  color: var(--pugh-text);
 }

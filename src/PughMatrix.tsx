@@ -576,15 +576,21 @@ export default function PughMatrix({
                                 )}
                                 <option value={CUSTOM_LABEL_SET_ID}>Custom...</option>
                               </select>
-                              {editHeaderLabelSetId === CUSTOM_LABEL_SET_ID && (
-                                <button
-                                  type="button"
-                                  className="pugh-custom-edit-button"
-                                  onClick={() => setCustomLabelDrawerOpen(true)}
-                                >
-                                  Edit…
-                                </button>
-                              )}
+                              {(() => {
+                                const isCustom = editHeaderLabelSetId === CUSTOM_LABEL_SET_ID;
+                                const isNone = editHeaderLabelSetId === 'none'
+                                  || editHeaderLabelSetId.startsWith('none-');
+                                return (
+                                  <button
+                                    type="button"
+                                    className="pugh-custom-edit-button"
+                                    disabled={isNone}
+                                    onClick={() => setCustomLabelDrawerOpen(true)}
+                                  >
+                                    {isCustom ? 'Edit…' : 'View…'}
+                                  </button>
+                                );
+                              })()}
                             </div>
                           );
                         })()}
@@ -851,11 +857,8 @@ export default function PughMatrix({
         )}
         <Dialog.Root open={customLabelDrawerOpen} onOpenChange={(open) => { if (!open) setCustomLabelDrawerOpen(false); }}>
           <Dialog.Content className="pugh-custom-label-drawer">
-            <Dialog.Title>Custom Labels</Dialog.Title>
-            <Dialog.Description size="2">
-              Define labels for each score value. Min and max labels are required.
-            </Dialog.Description>
             {(() => {
+              const isCustom = editHeaderLabelSetId === CUSTOM_LABEL_SET_ID;
               const min = Number(editHeaderScaleMin) || 1;
               const max = Number(editHeaderScaleMax) || 10;
               const step = Number(editHeaderScaleStep) || 1;
@@ -869,6 +872,12 @@ export default function PughMatrix({
               const isValid = !!(editCustomLabels[min]?.trim() && editCustomLabels[max]?.trim());
               return (
                 <>
+                  <Dialog.Title>{isCustom ? 'Custom Labels' : 'Label Preview'}</Dialog.Title>
+                  <Dialog.Description size="2">
+                    {isCustom
+                      ? 'Define labels for each score value. Min and max labels are required. Unlabeled scores round down to the nearest labeled value.'
+                      : 'Preview the labels for this set. Edit any value to create a custom set. Unlabeled scores round down to the nearest labeled value.'}
+                  </Dialog.Description>
                   <div className="pugh-custom-label-list">
                     {values.map((v) => {
                       const isEndpoint = v === min || v === max;
@@ -876,13 +885,13 @@ export default function PughMatrix({
                         <div key={v} className="pugh-custom-label-row">
                           <span className="pugh-custom-label-value">
                             {v}
-                            {isEndpoint && <span className="pugh-custom-label-required">*</span>}
+                            {isCustom && isEndpoint && <span className="pugh-custom-label-required">*</span>}
                           </span>
                           <input
                             type="text"
                             className="pugh-edit-input"
                             aria-label={`Label for score ${v}`}
-                            placeholder={isEndpoint ? 'Required' : 'Optional'}
+                            placeholder={isCustom && isEndpoint ? 'Required' : 'Optional'}
                             value={editCustomLabels[v] ?? ''}
                             onChange={(e) => setEditCustomLabel(v, e.target.value)}
                           />
@@ -892,10 +901,10 @@ export default function PughMatrix({
                   </div>
                   <div className="pugh-edit-actions" style={{ marginTop: '0.75rem' }}>
                     <button type="button" disabled={!isValid} onClick={applyCustomLabels}>
-                      Apply
+                      {isCustom ? 'Apply' : 'Apply as Custom'}
                     </button>
                     <button type="button" onClick={() => setCustomLabelDrawerOpen(false)}>
-                      Cancel
+                      {isCustom ? 'Cancel' : 'Close'}
                     </button>
                   </div>
                 </>

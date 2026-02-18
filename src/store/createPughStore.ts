@@ -313,7 +313,16 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
     setCustomLabelDrawerOpen: (open: boolean) => {
       if (open) {
         const state = get();
-        // Pre-populate from criterion's existing custom labels if editCustomLabels is empty
+        if (state.editHeaderLabelSetId !== CUSTOM_LABEL_SET_ID) {
+          // Pre-populate from the selected predefined labelset
+          const ls = LABEL_SETS.find((l) => l.id === state.editHeaderLabelSetId);
+          set({
+            customLabelDrawerOpen: true,
+            editCustomLabels: ls ? { ...ls.labels } : {},
+          }, false, 'setCustomLabelDrawerOpen');
+          return;
+        }
+        // For custom: pre-populate from criterion's saved labels if editCustomLabels is empty
         if (Object.keys(state.editCustomLabels).length === 0 && state.editingHeader?.type === 'criterion') {
           const criterion = state.criteria.find((c) => c.id === state.editingHeader!.id);
           if (criterion) {
