@@ -6,15 +6,17 @@ import { createPughStore } from './store/createPughStore';
 import { createLocalStoragePersister } from './persist/localStoragePersister';
 import { PughStoreProvider } from './store/PughStoreProvider';
 import { scoreId, toolId as makeToolId, MAIN_BRANCH_ID } from './ids';
-import { DEFAULT_SCALE } from './types';
+import { LABELS_COST_1_10 } from './types';
+import type { ScaleType } from './types';
 import './pugh-matrix.css';
 
-const NUMERIC_1_10 = DEFAULT_SCALE;
+const NUMERIC_1_10_COST: ScaleType = { kind: 'numeric', min: 1, max: 10, step: 1, labels: LABELS_COST_1_10.labels };
+const NUMERIC_1_10_BARE: ScaleType = { kind: 'numeric', min: 1, max: 10, step: 1 };
 
 const criteria = [
-  { id: 'cost', label: 'Cost', user: 'alice', scale: NUMERIC_1_10 },
-  { id: 'performance', label: 'Performance', user: 'alice', scale: NUMERIC_1_10 },
-  { id: 'ease-of-use', label: 'Ease of Use', user: 'alice', scale: NUMERIC_1_10 },
+  { id: 'cost', label: 'Cost', user: 'alice', scale: NUMERIC_1_10_COST },
+  { id: 'performance', label: 'Performance', user: 'alice', scale: NUMERIC_1_10_BARE },
+  { id: 'ease-of-use', label: 'Ease of Use', user: 'alice', scale: NUMERIC_1_10_BARE },
 ];
 const tools = [
   { id: 'react', label: 'React', user: 'alice' },

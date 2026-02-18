@@ -631,3 +631,103 @@
 .pugh-branch-create-button:hover {
   opacity: 0.85;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Custom label drawer (right-side sheet)                             */
+/* ------------------------------------------------------------------ */
+
+.pugh-custom-label-drawer {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: auto !important;
+  width: 340px;
+  max-width: 90vw;
+  height: 100vh;
+  max-height: 100vh !important;
+  border-radius: 0 !important;
+  transform: none !important;
+  animation: pugh-slide-in-right 0.2s ease-out;
+  overflow-y: auto;
+}
+
+@keyframes pugh-slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.pugh-custom-label-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.pugh-custom-label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pugh-custom-label-value {
+  min-width: 2.5rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.pugh-custom-label-required {
+  color: #ef4444;
+  margin-left: 0.15rem;
+}
+
+.pugh-custom-label-row .pugh-edit-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.pugh-custom-label-drawer .pugh-edit-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Labelset row: select + edit button side by side */
+.pugh-labelset-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pugh-labelset-row .pugh-header-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.pugh-custom-edit-button {
+  flex-shrink: 0;
+  padding: 0.2rem 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--pugh-primary);
+  background: transparent;
+  border: 1px solid var(--pugh-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.pugh-custom-edit-button:hover {
+  background: var(--pugh-primary);
+  color: #fff;
+}

@@ -1,3 +1,19 @@
+// --- Custom label set sentinel ---
+
+export const CUSTOM_LABEL_SET_ID = '__custom__';
+
+// --- Score label resolution (round-down lookup) ---
+
+export function resolveScoreLabel(score: number, labels: Record<number, string>): string | undefined {
+  const keys = Object.keys(labels).map(Number).sort((a, b) => a - b);
+  let result: string | undefined;
+  for (const k of keys) {
+    if (k <= score) result = labels[k];
+    else break;
+  }
+  return result;
+}
+
 // --- Scale Type union ---
 
 export type ScaleType =

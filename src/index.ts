@@ -13,7 +13,7 @@ export {
   LABEL_SETS, labelSetsForRange,
   findRange, findLabelSet,
   normalizeScore, getScoreColor, getEffectiveScale, scaleLabel,
-  formatCount,
+  formatCount, resolveScoreLabel, CUSTOM_LABEL_SET_ID,
 } from './types';
 
 export { createPughStore } from './store';

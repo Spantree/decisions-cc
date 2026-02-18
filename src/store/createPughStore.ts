@@ -1,7 +1,7 @@
 import { createStore, type StateCreator } from 'zustand/vanilla';
 import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import type { Criterion, Tool, ScoreEntry, ScaleType } from '../types';
-import { DEFAULT_SCALE, getEffectiveScale, findLabelSet, labelSetsForRange, LABELS_QUALITY_1_10, LABEL_SETS } from '../types';
+import { DEFAULT_SCALE, getEffectiveScale, findLabelSet, labelSetsForRange, LABELS_QUALITY_1_10, LABEL_SETS, CUSTOM_LABEL_SET_ID } from '../types';
 import type { Persister } from '../persist/types';
 import type { PughStore, PughDomainState } from './types';
 import type { PughEvent, Branch } from '../events/types';
@@ -181,6 +181,8 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
     editHeaderScaleMax: '10',
     editHeaderScaleStep: '1',
     editHeaderLabelSetId: LABELS_QUALITY_1_10.id,
+    customLabelDrawerOpen: false,
+    editCustomLabels: {},
 
     // Domain actions (thin wrappers around dispatch)
     addScore: (entry: ScoreEntry) => {
@@ -256,6 +258,7 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
         const item = items.find((i) => i.id === id);
         let scaleState = scaleToEditState(DEFAULT_SCALE);
         let labelSetId = LABELS_QUALITY_1_10.id;
+        let customLabels: Record<number, string> = {};
         if (type === 'criterion') {
           const criterion = state.criteria.find((c) => c.id === id);
           if (criterion) {
@@ -264,12 +267,20 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
             const ls = findLabelSet(effective);
             if (ls) {
               labelSetId = ls.id;
+            } else if (effective.kind === 'numeric' && effective.labels && Object.keys(effective.labels).length > 0) {
+              labelSetId = CUSTOM_LABEL_SET_ID;
+              customLabels = { ...effective.labels };
             } else {
               const range = effective.kind === 'numeric'
                 ? `${effective.min === 1 && effective.max === 10 ? '1-10' : effective.min === -2 && effective.max === 2 ? '-2-2' : ''}`
                 : effective.kind === 'unbounded' ? 'proportional' : '';
               const fallback = range ? labelSetsForRange(range) : [];
-              if (fallback.length > 0) labelSetId = fallback[0].id;
+              const noneFallback = fallback.find((ls) => ls.name === 'None');
+              if (noneFallback) {
+                labelSetId = noneFallback.id;
+              } else {
+                labelSetId = 'none';
+              }
             }
           }
         }
@@ -277,6 +288,8 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
           editingHeader: { type, id },
           editHeaderValue: item?.label ?? '',
           editHeaderLabelSetId: labelSetId,
+          editCustomLabels: customLabels,
+          customLabelDrawerOpen: false,
           ...scaleState,
         };
       }, false, { type: 'startEditingHeader', headerType: type, id }),
@@ -288,6 +301,8 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
       editHeaderScaleMax: '10',
       editHeaderScaleStep: '1',
       editHeaderLabelSetId: LABELS_QUALITY_1_10.id,
+      customLabelDrawerOpen: false,
+      editCustomLabels: {},
     }), false, 'cancelEditingHeader'),
     setEditHeaderValue: (editHeaderValue: string) => set(() => ({ editHeaderValue }), false, { type: 'setEditHeaderValue', editHeaderValue }),
     setEditHeaderScaleKind: (editHeaderScaleKind: string) => set(() => ({ editHeaderScaleKind }), false, { type: 'setEditHeaderScaleKind', editHeaderScaleKind }),
@@ -295,6 +310,46 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
     setEditHeaderScaleMax: (editHeaderScaleMax: string) => set(() => ({ editHeaderScaleMax }), false, { type: 'setEditHeaderScaleMax', editHeaderScaleMax }),
     setEditHeaderScaleStep: (editHeaderScaleStep: string) => set(() => ({ editHeaderScaleStep }), false, { type: 'setEditHeaderScaleStep', editHeaderScaleStep }),
     setEditHeaderLabelSetId: (editHeaderLabelSetId: string) => set(() => ({ editHeaderLabelSetId }), false, { type: 'setEditHeaderLabelSetId', editHeaderLabelSetId }),
+    setCustomLabelDrawerOpen: (open: boolean) => {
+      if (open) {
+        const state = get();
+        // Pre-populate from criterion's existing custom labels if editCustomLabels is empty
+        if (Object.keys(state.editCustomLabels).length === 0 && state.editingHeader?.type === 'criterion') {
+          const criterion = state.criteria.find((c) => c.id === state.editingHeader!.id);
+          if (criterion) {
+            const effective = getEffectiveScale(criterion, state.matrixConfig.defaultScale);
+            if (effective.kind === 'numeric' && effective.labels && !findLabelSet(effective)) {
+              set({ customLabelDrawerOpen: true, editCustomLabels: { ...effective.labels } }, false, 'setCustomLabelDrawerOpen');
+              return;
+            }
+          }
+        }
+      }
+      set({ customLabelDrawerOpen: open }, false, { type: 'setCustomLabelDrawerOpen', open });
+    },
+    setEditCustomLabel: (value: number, label: string) => set((state) => {
+      const updated = { ...state.editCustomLabels };
+      if (label === '') {
+        delete updated[value];
+      } else {
+        updated[value] = label;
+      }
+      return { editCustomLabels: updated };
+    }, false, { type: 'setEditCustomLabel', value, label }),
+    applyCustomLabels: () => {
+      const state = get();
+      // Clean/trim labels
+      const cleaned: Record<number, string> = {};
+      for (const [k, v] of Object.entries(state.editCustomLabels)) {
+        const trimmed = v.trim();
+        if (trimmed) cleaned[Number(k)] = trimmed;
+      }
+      set({
+        editCustomLabels: cleaned,
+        editHeaderLabelSetId: CUSTOM_LABEL_SET_ID,
+        customLabelDrawerOpen: false,
+      }, false, 'applyCustomLabels');
+    },
     saveHeaderEdit: () => {
       const state = get();
       if (!state.editingHeader) return;
@@ -318,8 +373,20 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
             const min = Number(state.editHeaderScaleMin) || 1;
             const max = Number(state.editHeaderScaleMax) || 10;
             const step = Number(state.editHeaderScaleStep) || 1;
-            const ls = LABEL_SETS.find((l) => l.id === state.editHeaderLabelSetId);
-            newScale = { kind: 'numeric', min, max, step, labels: ls?.labels };
+            let labels: Record<number, string> | undefined;
+            if (state.editHeaderLabelSetId === CUSTOM_LABEL_SET_ID) {
+              // Clean: only keep entries with non-empty trimmed labels
+              const cleaned: Record<number, string> = {};
+              for (const [k, v] of Object.entries(state.editCustomLabels)) {
+                const trimmed = v.trim();
+                if (trimmed) cleaned[Number(k)] = trimmed;
+              }
+              labels = Object.keys(cleaned).length > 0 ? cleaned : undefined;
+            } else {
+              const ls = LABEL_SETS.find((l) => l.id === state.editHeaderLabelSetId);
+              labels = ls?.labels;
+            }
+            newScale = { kind: 'numeric', min, max, step, labels };
             break;
           }
         }

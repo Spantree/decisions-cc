@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
-import { HoverCard, Table, Theme } from '@radix-ui/themes';
+import { Dialog, HoverCard, Table, Theme } from '@radix-ui/themes';
 import {
   red, tomato, amber, yellow, lime, grass, green,
   greenDark,
 } from '@radix-ui/colors';
 import type { ScoreEntry, ScaleType } from './types';
-import { getEffectiveScale, normalizeScore, getScoreColor, formatCount, labelSetsForRange, LABEL_SETS } from './types';
+import { getEffectiveScale, normalizeScore, getScoreColor, formatCount, labelSetsForRange, resolveScoreLabel, CUSTOM_LABEL_SET_ID } from './types';
 import { usePughStore } from './store/usePughStore';
 import { scoreId, toolId, criterionId } from './ids';
 import './pugh-matrix.css';
@@ -71,10 +71,10 @@ function displayScoreValue(score: number, scale: ScaleType): string {
   }
 }
 
-/** Returns the label for a score, checking per-entry override first, then scale defaults. */
+/** Returns the label for a score, checking per-entry override first, then scale defaults (round-down). */
 function getScoreLabel(score: number, scale: ScaleType, entryLabel?: string): string | undefined {
   if (entryLabel) return entryLabel;
-  if (scale.kind === 'numeric' && scale.labels) return scale.labels[score];
+  if (scale.kind === 'numeric' && scale.labels) return resolveScoreLabel(score, scale.labels);
   return undefined;
 }
 
@@ -127,6 +127,11 @@ export default function PughMatrix({
   const setEditHeaderScaleStep = usePughStore((s) => s.setEditHeaderScaleStep);
   const setEditHeaderLabelSetId = usePughStore((s) => s.setEditHeaderLabelSetId);
   const setCriterionScale = usePughStore((s) => s.setCriterionScale);
+  const customLabelDrawerOpen = usePughStore((s) => s.customLabelDrawerOpen);
+  const editCustomLabels = usePughStore((s) => s.editCustomLabels);
+  const setCustomLabelDrawerOpen = usePughStore((s) => s.setCustomLabelDrawerOpen);
+  const setEditCustomLabel = usePughStore((s) => s.setEditCustomLabel);
+  const applyCustomLabels = usePughStore((s) => s.applyCustomLabels);
 
   const { latestByCell, historyByCell, weightedTotals, maxTotal, winner, allScoresByCriterion } =
     useMemo(() => {
@@ -548,20 +553,39 @@ export default function PughMatrix({
                           const rangeId = min === 1 && max === 10 ? '1-10'
                             : min === -2 && max === 2 ? '-2-2'
                             : null;
-                          if (!rangeId) return null;
-                          const sets = labelSetsForRange(rangeId);
-                          if (sets.length === 0) return null;
+                          const sets = rangeId ? labelSetsForRange(rangeId) : [];
                           return (
-                            <select
-                              aria-label={`Label set for ${criterion.label}`}
-                              className="pugh-header-select"
-                              value={editHeaderLabelSetId}
-                              onChange={(e) => setEditHeaderLabelSetId(e.target.value)}
-                            >
-                              {sets.map((ls) => (
-                                <option key={ls.id} value={ls.id}>{ls.name}</option>
-                              ))}
-                            </select>
+                            <div className="pugh-labelset-row">
+                              <select
+                                aria-label={`Label set for ${criterion.label}`}
+                                className="pugh-header-select"
+                                value={editHeaderLabelSetId}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setEditHeaderLabelSetId(val);
+                                  if (val === CUSTOM_LABEL_SET_ID) {
+                                    setCustomLabelDrawerOpen(true);
+                                  }
+                                }}
+                              >
+                                {sets.map((ls) => (
+                                  <option key={ls.id} value={ls.id}>{ls.name}</option>
+                                ))}
+                                {sets.length === 0 && (
+                                  <option value="none">None</option>
+                                )}
+                                <option value={CUSTOM_LABEL_SET_ID}>Custom...</option>
+                              </select>
+                              {editHeaderLabelSetId === CUSTOM_LABEL_SET_ID && (
+                                <button
+                                  type="button"
+                                  className="pugh-custom-edit-button"
+                                  onClick={() => setCustomLabelDrawerOpen(true)}
+                                >
+                                  Edit…
+                                </button>
+                              )}
+                            </div>
                           );
                         })()}
                         </>
@@ -825,6 +849,60 @@ export default function PughMatrix({
             </button>
           </>
         )}
+        <Dialog.Root open={customLabelDrawerOpen} onOpenChange={(open) => { if (!open) setCustomLabelDrawerOpen(false); }}>
+          <Dialog.Content className="pugh-custom-label-drawer">
+            <Dialog.Title>Custom Labels</Dialog.Title>
+            <Dialog.Description size="2">
+              Define labels for each score value. Min and max labels are required.
+            </Dialog.Description>
+            {(() => {
+              const min = Number(editHeaderScaleMin) || 1;
+              const max = Number(editHeaderScaleMax) || 10;
+              const step = Number(editHeaderScaleStep) || 1;
+              const values: number[] = [];
+              for (let v = min; v <= max; v += step) {
+                values.push(Math.round(v * 1e6) / 1e6);
+              }
+              if (values.length > 0 && values[values.length - 1] !== max) {
+                values.push(max);
+              }
+              const isValid = !!(editCustomLabels[min]?.trim() && editCustomLabels[max]?.trim());
+              return (
+                <>
+                  <div className="pugh-custom-label-list">
+                    {values.map((v) => {
+                      const isEndpoint = v === min || v === max;
+                      return (
+                        <div key={v} className="pugh-custom-label-row">
+                          <span className="pugh-custom-label-value">
+                            {v}
+                            {isEndpoint && <span className="pugh-custom-label-required">*</span>}
+                          </span>
+                          <input
+                            type="text"
+                            className="pugh-edit-input"
+                            aria-label={`Label for score ${v}`}
+                            placeholder={isEndpoint ? 'Required' : 'Optional'}
+                            value={editCustomLabels[v] ?? ''}
+                            onChange={(e) => setEditCustomLabel(v, e.target.value)}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="pugh-edit-actions" style={{ marginTop: '0.75rem' }}>
+                    <button type="button" disabled={!isValid} onClick={applyCustomLabels}>
+                      Apply
+                    </button>
+                    <button type="button" onClick={() => setCustomLabelDrawerOpen(false)}>
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
+          </Dialog.Content>
+        </Dialog.Root>
       </div>
     </Theme>
   );

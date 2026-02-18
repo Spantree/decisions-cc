@@ -8,18 +8,22 @@ import { createLocalStoragePersister } from './persist/localStoragePersister';
 import { scoreId } from './ids';
 import './pugh-matrix.css';
 import type { Criterion, Tool, ScoreEntry, ScaleType } from './types';
-import { DEFAULT_SCALE, SCALE_NEG2_POS2 } from './types';
+import { DEFAULT_SCALE, SCALE_NEG2_POS2, LABELS_COST_1_10, LABELS_COST_NEG2_POS2 } from './types';
 
 const NUMERIC_1_10: ScaleType = DEFAULT_SCALE;
+const NUMERIC_1_10_BARE: ScaleType = { kind: 'numeric', min: 1, max: 10, step: 1 };
 const NUMERIC_NEG2_POS2: ScaleType = SCALE_NEG2_POS2;
+const NUMERIC_NEG2_POS2_BARE: ScaleType = { kind: 'numeric', min: -2, max: 2, step: 1 };
+const NUMERIC_1_10_COST: ScaleType = { kind: 'numeric', min: 1, max: 10, step: 1, labels: LABELS_COST_1_10.labels };
+const NUMERIC_NEG2_POS2_COST: ScaleType = { kind: 'numeric', min: -2, max: 2, step: 1, labels: LABELS_COST_NEG2_POS2.labels };
 const UNBOUNDED: ScaleType = { kind: 'unbounded' };
 const BINARY: ScaleType = { kind: 'binary' };
 
 const criteria: Criterion[] = [
-  { id: 'cost', label: 'Cost', user: 'alice', scale: NUMERIC_1_10 },
-  { id: 'performance', label: 'Performance', user: 'alice', scale: NUMERIC_1_10 },
-  { id: 'ease-of-use', label: 'Ease of Use', user: 'alice', scale: NUMERIC_1_10 },
-  { id: 'community', label: 'Community Support', user: 'alice', scale: NUMERIC_1_10 },
+  { id: 'cost', label: 'Cost', user: 'alice', scale: NUMERIC_1_10_COST },
+  { id: 'performance', label: 'Performance', user: 'alice', scale: NUMERIC_1_10_BARE },
+  { id: 'ease-of-use', label: 'Ease of Use', user: 'alice', scale: NUMERIC_1_10_BARE },
+  { id: 'community', label: 'Community Support', user: 'alice', scale: NUMERIC_1_10_BARE },
   { id: 'docs', label: 'Documentation', user: 'alice', scale: NUMERIC_1_10 },
 ];
 const tools: Tool[] = [
@@ -271,9 +275,9 @@ export const ReadOnly: Story = {
 /* ------------------------------------------------------------------ */
 
 const criteriaNeg2: Criterion[] = [
-  { id: 'cost', label: 'Cost', user: 'alice', scale: NUMERIC_NEG2_POS2 },
-  { id: 'performance', label: 'Performance', user: 'alice', scale: NUMERIC_NEG2_POS2 },
-  { id: 'ease-of-use', label: 'Ease of Use', user: 'alice', scale: NUMERIC_NEG2_POS2 },
+  { id: 'cost', label: 'Cost', user: 'alice', scale: NUMERIC_NEG2_POS2_COST },
+  { id: 'performance', label: 'Performance', user: 'alice', scale: NUMERIC_NEG2_POS2_BARE },
+  { id: 'ease-of-use', label: 'Ease of Use', user: 'alice', scale: NUMERIC_NEG2_POS2_BARE },
 ];
 
 const scoresNeg2: ScoreEntry[] = [
@@ -494,7 +498,7 @@ export const DecimalStep: Story = {
 /* ------------------------------------------------------------------ */
 
 const criteriaMixed: Criterion[] = [
-  { id: 'cost', label: 'Cost', user: 'alice', scale: NUMERIC_1_10 },
+  { id: 'cost', label: 'Cost', user: 'alice', scale: NUMERIC_1_10_COST },
   { id: 'ssr', label: 'SSR Support', user: 'alice', scale: BINARY },
   { id: 'stars', label: 'GitHub Stars', user: 'alice', scale: UNBOUNDED },
   { id: 'rating', label: 'User Rating (0-5)', user: 'alice', scale: HALF_STEP },
