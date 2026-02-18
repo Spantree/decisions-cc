@@ -6,7 +6,7 @@ const theme = create({
 
   // Brand
   brandTitle: 'Fluent Workshop — Decision Matrix',
-  brandUrl: 'https://github.com/Spantree/decisionapp',
+  brandUrl: 'https://github.com/Spantree/decisions-cc',
   brandImage: '/logo.svg',
   brandTarget: '_blank',
 

@@ -1,4 +1,4 @@
-# decisionapp
+# decisions-cc
 
 A standalone React component for [Pugh decision matrices](https://en.wikipedia.org/wiki/Decision-matrix_method) — weighted multi-criteria comparison tables with interactive scoring, color-coded cells, and dark mode support.
 
@@ -7,14 +7,14 @@ A standalone React component for [Pugh decision matrices](https://en.wikipedia.o
 Install directly from GitHub (no registry required):
 
 ```bash
-npm install Spantree/decisionapp
+npm install Spantree/decisions-cc
 ```
 
 Pin to a specific commit or tag:
 
 ```bash
-npm install Spantree/decisionapp#v0.1.0
-npm install Spantree/decisionapp#abc1234
+npm install Spantree/decisions-cc#v0.1.0
+npm install Spantree/decisions-cc#abc1234
 ```
 
 Peer dependencies — bring your own:
@@ -29,8 +29,8 @@ Peer dependencies — bring your own:
 PughMatrix always reads its data from a Zustand store. Create a store with `createPughStore`, pass it to `PughStoreProvider`, and render `PughMatrix` inside the provider:
 
 ```tsx
-import { PughMatrix, createPughStore, PughStoreProvider } from 'decisionapp';
-import 'decisionapp/styles.css';
+import { PughMatrix, createPughStore, PughStoreProvider } from 'decisions-cc';
+import 'decisions-cc/styles.css';
 import '@radix-ui/themes/styles.css';
 
 const store = createPughStore({
@@ -147,7 +147,7 @@ Each score entry's `toolId` and `criterionId` must match an `id` in the `tools` 
 ### Creating a store
 
 ```tsx
-import { createPughStore, PughStoreProvider, PughMatrix } from 'decisionapp';
+import { createPughStore, PughStoreProvider, PughMatrix } from 'decisions-cc';
 
 const store = createPughStore({
   criteria: [
@@ -185,7 +185,7 @@ store.getState().renameCriterion('cost', 'Total Cost of Ownership');
 ### Persisted store (localStorage)
 
 ```tsx
-import { createPughStore, createLocalStoragePersister, PughStoreProvider, PughMatrix } from 'decisionapp';
+import { createPughStore, createLocalStoragePersister, PughStoreProvider, PughMatrix } from 'decisions-cc';
 
 const store = createPughStore({
   criteria: [
@@ -216,7 +216,7 @@ Data survives page reloads. The built-in localStorage persister also listens for
 Implement the `Persister` interface to store data anywhere (IndexedDB, Supabase, a REST API, etc.):
 
 ```ts
-import type { Persister } from 'decisionapp';
+import type { Persister } from 'decisions-cc';
 
 const myPersister: Persister = {
   load: (key) => fetchFromMyBackend(key),
@@ -307,15 +307,15 @@ Override the default theme by setting these variables on a parent element:
 
 ## Using with Docusaurus (greenfield guide)
 
-This section walks through wiring up `decisionapp` with Zustand state in a Docusaurus site from scratch.
+This section walks through wiring up `decisions-cc` with Zustand state in a Docusaurus site from scratch.
 
 ### 1. Install dependencies
 
 ```bash
-npm install Spantree/decisionapp @radix-ui/themes
+npm install Spantree/decisions-cc @radix-ui/themes
 ```
 
-(`zustand` is included as a transitive dependency of `decisionapp`.)
+(`zustand` is included as a transitive dependency of `decisions-cc`.)
 
 ### 2. Create a wrapper component
 
@@ -332,11 +332,11 @@ import {
   createPughStore,
   PughStoreProvider,
   createLocalStoragePersister,
-} from 'decisionapp';
-import 'decisionapp/styles.css';
+} from 'decisions-cc';
+import 'decisions-cc/styles.css';
 import '@radix-ui/themes/styles.css';
 import { useColorMode } from '@docusaurus/theme-common';
-import type { Criterion, Tool, ScoreEntry } from 'decisionapp';
+import type { Criterion, Tool, ScoreEntry } from 'decisions-cc';
 
 interface PughMatrixWidgetProps {
   /** Row definitions — the evaluation criteria. */
@@ -460,7 +460,7 @@ If you need to read or modify matrix state from sibling components (e.g. an "Exp
 ```tsx
 // src/components/MatrixPage.tsx
 import { useMemo } from 'react';
-import { createPughStore, PughStoreProvider, PughMatrix, usePughStore } from 'decisionapp';
+import { createPughStore, PughStoreProvider, PughMatrix, usePughStore } from 'decisions-cc';
 
 function ExportButton() {
   const scores = usePughStore((s) => s.scores);
