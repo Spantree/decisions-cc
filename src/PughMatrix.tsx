@@ -899,13 +899,27 @@ export default function PughMatrix({
                       );
                     })}
                   </div>
-                  <div className="pugh-edit-actions" style={{ marginTop: '0.75rem' }}>
-                    <button type="button" disabled={!isValid} onClick={applyCustomLabels}>
-                      {isCustom ? 'Apply' : 'Apply as Custom'}
+                  <div className="pugh-custom-label-actions">
+                    <button
+                      type="button"
+                      className="pugh-clear-button"
+                      disabled={Object.keys(editCustomLabels).length === 0}
+                      onClick={() => {
+                        for (const v of values) {
+                          setEditCustomLabel(v, '');
+                        }
+                      }}
+                    >
+                      Clear All
                     </button>
-                    <button type="button" onClick={() => setCustomLabelDrawerOpen(false)}>
-                      {isCustom ? 'Cancel' : 'Close'}
-                    </button>
+                    <div className="pugh-edit-actions">
+                      <button type="button" disabled={!isValid} onClick={applyCustomLabels}>
+                        {isCustom ? 'Apply' : 'Apply as Custom'}
+                      </button>
+                      <button type="button" onClick={() => setCustomLabelDrawerOpen(false)}>
+                        {isCustom ? 'Cancel' : 'Close'}
+                      </button>
+                    </div>
                   </div>
                 </>
               );
