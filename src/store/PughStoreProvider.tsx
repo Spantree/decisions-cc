@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useStore } from 'zustand';
 import { PughStoreContext } from './usePughStore';
 import type { PughStoreInstance } from './createPughStore';
 
@@ -8,9 +9,16 @@ export interface PughStoreProviderProps {
 }
 
 export function PughStoreProvider({ store, children }: PughStoreProviderProps) {
+  const isLoading = useStore(store, (s) => s.isLoading);
+  const init = useStore(store, (s) => s.init);
+
+  useEffect(() => {
+    init();
+  }, [init]);
+
   return (
     <PughStoreContext.Provider value={store}>
-      {children}
+      {isLoading ? null : children}
     </PughStoreContext.Provider>
   );
 }

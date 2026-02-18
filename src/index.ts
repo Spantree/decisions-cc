@@ -7,14 +7,26 @@ export type { CreatePughStoreOptions, PughStoreInstance } from './store';
 export { PughStoreProvider, PughStoreContext, usePughStore } from './store';
 export type { PughStoreProviderProps, PughDomainState, PughUIState, PughActions, PughStore } from './store';
 
-export { createPughStorage, createLocalStoragePersister } from './persist';
-export type { Persister } from './persist';
-
-export type { PughEvent, Branch } from './events';
+export type { PughEvent } from './events';
 export { projectEvents, seedEventsFromOptions } from './events';
 export type { PughEventStoreState, PughEventStoreActions } from './store/types';
 
 export { BranchSelector } from './BranchSelector';
 export type { BranchSelectorProps } from './BranchSelector';
 
-export { eventId, branchId, scoreId, toolId, criterionId, MAIN_BRANCH_ID } from './ids';
+export { eventId, scoreId, toolId, criterionId, commitId } from './ids';
+
+export type {
+  Commit,
+  Ref,
+  ObjectStore,
+  RefStore,
+  MatrixRepository,
+  BranchDiff,
+  MergeStrategy,
+} from './repository';
+export {
+  createMemoryRepository,
+  createLocalStorageRepository,
+  createMatrixRepository,
+} from './repository';

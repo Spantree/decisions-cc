@@ -3,9 +3,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { BranchSelector } from './BranchSelector';
 import PughMatrix from './PughMatrix';
 import { createPughStore } from './store/createPughStore';
-import { createLocalStoragePersister } from './persist/localStoragePersister';
+import { createLocalStorageRepository } from './repository/localStorage';
 import { PughStoreProvider } from './store/PughStoreProvider';
-import { scoreId, toolId as makeToolId, MAIN_BRANCH_ID } from './ids';
+import { scoreId, toolId as makeToolId } from './ids';
 import './pugh-matrix.css';
 
 const criteria = [
@@ -26,80 +26,93 @@ function StoryBranchSelector({
   isDark,
   prePopulateBranches,
   showMatrix,
-  persistKey,
+  persistPrefix,
 }: {
   isDark?: boolean;
   prePopulateBranches?: boolean;
   showMatrix?: boolean;
-  persistKey?: string;
+  persistPrefix?: string;
 }) {
   const [resetKey, setResetKey] = useState(0);
   const store = useMemo(() => {
-    // Check for persisted data BEFORE creating the store so seeding
-    // never races with rehydration.
-    const hasSavedData = persistKey && (() => { try { return !!localStorage.getItem(persistKey); } catch { return false; } })();
     const s = createPughStore({
       criteria,
       tools,
-      ...(persistKey && {
-        persistKey,
-        persister: createLocalStoragePersister(),
+      ...(persistPrefix && {
+        repository: createLocalStorageRepository(persistPrefix),
       }),
     });
-    if (prePopulateBranches && !hasSavedData) {
+
+    if (prePopulateBranches) {
+      // Wait for init, then populate
       const state = () => s.getState();
-      const t = Date.now();
 
-      // -- main: moderate baseline (yellows/limes) --
-      state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: costCri.id, score: 5, label: 'Moderate', timestamp: t, user: 'alice' });
-      state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: perfCri.id, score: 6, label: 'Decent', timestamp: t, user: 'alice' });
-      state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: eouCri.id, score: 5, label: 'Average', timestamp: t, user: 'alice' });
-      state().addScore({ id: scoreId(), toolId: vueTool.id, criterionId: costCri.id, score: 6, label: 'Fair', timestamp: t, user: 'alice' });
-      state().addScore({ id: scoreId(), toolId: vueTool.id, criterionId: perfCri.id, score: 5, label: 'OK', timestamp: t, user: 'alice' });
-      state().addScore({ id: scoreId(), toolId: vueTool.id, criterionId: eouCri.id, score: 7, label: 'Good', timestamp: t, user: 'alice' });
-      state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: costCri.id, score: 7, label: 'Cheap', timestamp: t, user: 'alice' });
-      state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: perfCri.id, score: 6, label: 'Decent', timestamp: t, user: 'alice' });
-      state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: eouCri.id, score: 5, label: 'Average', timestamp: t, user: 'alice' });
+      // We need to add scores after init completes. Since init is async
+      // and fires in PughStoreProvider, we schedule population after init.
+      const unsubscribe = s.subscribe((curr) => {
+        if (!curr.isLoading && unsubscribe) {
+          unsubscribe();
+          const t = Date.now();
 
-      // -- 'pro-react': Bob loves React, adds Angular, tanks the rest --
-      state().createBranch('pro-react');
-      const angularId = makeToolId();
-      state().addTool(angularId, 'Angular', 'bob');
-      state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: costCri.id, score: 10, label: 'Free!', timestamp: t + 1, user: 'bob' });
-      state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: perfCri.id, score: 10, label: 'Blazing', timestamp: t + 1, user: 'bob' });
-      state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: eouCri.id, score: 9, label: 'Great DX', timestamp: t + 1, user: 'bob' });
-      state().addScore({ id: scoreId(), toolId: vueTool.id, criterionId: costCri.id, score: 2, label: 'Expensive', timestamp: t + 1, user: 'bob' });
-      state().addScore({ id: scoreId(), toolId: vueTool.id, criterionId: perfCri.id, score: 1, label: 'Slow', timestamp: t + 1, user: 'bob' });
-      state().addScore({ id: scoreId(), toolId: vueTool.id, criterionId: eouCri.id, score: 3, label: 'Confusing', timestamp: t + 1, user: 'bob' });
-      state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: costCri.id, score: 2, label: 'Niche', timestamp: t + 1, user: 'bob' });
-      state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: perfCri.id, score: 3, label: 'Unproven', timestamp: t + 1, user: 'bob' });
-      state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: eouCri.id, score: 2, label: 'Weird', timestamp: t + 1, user: 'bob' });
-      state().addScore({ id: scoreId(), toolId: angularId, criterionId: costCri.id, score: 8, label: 'Free', timestamp: t + 1, user: 'bob' });
-      state().addScore({ id: scoreId(), toolId: angularId, criterionId: perfCri.id, score: 7, label: 'Solid', timestamp: t + 1, user: 'bob' });
-      state().addScore({ id: scoreId(), toolId: angularId, criterionId: eouCri.id, score: 4, label: 'Steep', timestamp: t + 1, user: 'bob' });
+          // -- main: moderate baseline --
+          state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: costCri.id, score: 5, label: 'Moderate', timestamp: t, user: 'alice' });
+          state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: perfCri.id, score: 6, label: 'Decent', timestamp: t, user: 'alice' });
+          state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: eouCri.id, score: 5, label: 'Average', timestamp: t, user: 'alice' });
+          state().addScore({ id: scoreId(), toolId: vueTool.id, criterionId: costCri.id, score: 6, label: 'Fair', timestamp: t, user: 'alice' });
+          state().addScore({ id: scoreId(), toolId: vueTool.id, criterionId: perfCri.id, score: 5, label: 'OK', timestamp: t, user: 'alice' });
+          state().addScore({ id: scoreId(), toolId: vueTool.id, criterionId: eouCri.id, score: 7, label: 'Good', timestamp: t, user: 'alice' });
+          state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: costCri.id, score: 7, label: 'Cheap', timestamp: t, user: 'alice' });
+          state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: perfCri.id, score: 6, label: 'Decent', timestamp: t, user: 'alice' });
+          state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: eouCri.id, score: 5, label: 'Average', timestamp: t, user: 'alice' });
 
-      // -- 'svelte-wins': Carol removes React, renames criterion, Svelte dominates --
-      state().switchBranch(MAIN_BRANCH_ID);
-      state().createBranch('svelte-wins');
-      state().removeTool(reactTool.id);
-      state().renameCriterion(eouCri.id, 'Developer Joy');
-      state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: costCri.id, score: 10, label: 'Free', timestamp: t + 2, user: 'carol' });
-      state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: perfCri.id, score: 10, label: 'Fastest', timestamp: t + 2, user: 'carol' });
-      state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: eouCri.id, score: 10, label: 'Joyful', timestamp: t + 2, user: 'carol' });
-      state().addScore({ id: scoreId(), toolId: vueTool.id, criterionId: costCri.id, score: 3, label: 'Costly', timestamp: t + 2, user: 'carol' });
-      state().addScore({ id: scoreId(), toolId: vueTool.id, criterionId: perfCri.id, score: 4, label: 'Meh', timestamp: t + 2, user: 'carol' });
-      state().addScore({ id: scoreId(), toolId: vueTool.id, criterionId: eouCri.id, score: 3, label: 'Tedious', timestamp: t + 2, user: 'carol' });
+          // -- 'pro-react': Bob loves React --
+          setTimeout(() => {
+            state().createBranch('pro-react');
+            setTimeout(() => {
+              const angularId = makeToolId();
+              state().addTool(angularId, 'Angular', 'bob');
+              state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: costCri.id, score: 10, label: 'Free!', timestamp: t + 1, user: 'bob' });
+              state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: perfCri.id, score: 10, label: 'Blazing', timestamp: t + 1, user: 'bob' });
+              state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: eouCri.id, score: 9, label: 'Great DX', timestamp: t + 1, user: 'bob' });
 
-      // Start on main
-      state().switchBranch(MAIN_BRANCH_ID);
+              // -- 'svelte-wins': switch back to main, then fork --
+              setTimeout(() => {
+                state().switchBranch('main');
+                setTimeout(() => {
+                  state().createBranch('svelte-wins');
+                  setTimeout(() => {
+                    state().removeTool(reactTool.id);
+                    state().renameCriterion(eouCri.id, 'Developer Joy');
+                    state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: costCri.id, score: 10, label: 'Free', timestamp: t + 2, user: 'carol' });
+                    state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: perfCri.id, score: 10, label: 'Fastest', timestamp: t + 2, user: 'carol' });
+                    state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: eouCri.id, score: 10, label: 'Joyful', timestamp: t + 2, user: 'carol' });
+
+                    // Start on main
+                    setTimeout(() => state().switchBranch('main'), 50);
+                  }, 50);
+                }, 50);
+              }, 50);
+            }, 50);
+          }, 50);
+        }
+      });
     }
+
     return s;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prePopulateBranches, persistKey, resetKey]);
+  }, [prePopulateBranches, persistPrefix, resetKey]);
 
-  const handleClear = persistKey
+  const handleClear = persistPrefix
     ? () => {
-        try { localStorage.removeItem(persistKey); } catch {}
+        try {
+          // Clear all keys with this prefix
+          const keys = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key?.startsWith(persistPrefix)) keys.push(key);
+          }
+          keys.forEach((k) => localStorage.removeItem(k));
+        } catch {}
         setResetKey((k) => k + 1);
       }
     : undefined;
@@ -172,7 +185,7 @@ export const WithMatrix: Story = {
   args: {
     prePopulateBranches: true,
     showMatrix: true,
-    persistKey: 'pugh-branch-demo',
+    persistPrefix: 'pugh-branch-demo',
   },
 };
 
@@ -182,7 +195,7 @@ export const WithMatrixDark: Story = {
     prePopulateBranches: true,
     showMatrix: true,
     isDark: true,
-    persistKey: 'pugh-branch-demo-dark',
+    persistPrefix: 'pugh-branch-demo-dark',
   },
   parameters: {
     backgrounds: { default: 'dark' },

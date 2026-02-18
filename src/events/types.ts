@@ -62,11 +62,3 @@ export type PughEvent =
   | ToolRemoved
   | ScoreSet
   | WeightSet;
-
-export interface Branch {
-  id: string;
-  name: string;
-  createdAt: number;
-  parentBranchId?: string;
-  forkEventIndex?: number;
-}

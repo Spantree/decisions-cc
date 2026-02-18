@@ -1,6 +1,5 @@
 export type {
   PughEvent,
-  Branch,
   CriterionAdded,
   CriterionRenamed,
   CriterionRemoved,

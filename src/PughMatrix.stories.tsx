@@ -4,7 +4,7 @@ import { within, userEvent } from 'storybook/test';
 import PughMatrix from './PughMatrix';
 import { createPughStore } from './store/createPughStore';
 import { PughStoreProvider } from './store/PughStoreProvider';
-import { createLocalStoragePersister } from './persist/localStoragePersister';
+import { createLocalStorageRepository } from './repository/localStorage';
 import { scoreId } from './ids';
 import './pugh-matrix.css';
 import type { Criterion, Tool, ScoreEntry } from './types';
@@ -167,7 +167,7 @@ export const Default: Story = {};
 export const WithTotals: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const button = canvas.getByRole('button', { name: /show totals/i });
+    const button = await canvas.findByRole('button', { name: /show totals/i });
     await userEvent.click(button);
   },
 };
@@ -258,12 +258,11 @@ export const ReadOnly: Story = {
 /*  localStorage persistence story                                    */
 /* ------------------------------------------------------------------ */
 
-const PERSIST_KEY = 'pugh-storybook-demo';
+const PERSIST_PREFIX = 'pugh-storybook-demo';
 
 /**
  * Store with localStorage persistence — edits survive page reloads.
  * Click any cell to add a score. Use "Clear saved data" to reset to defaults.
- * Writes to localStorage key "pugh-storybook-demo".
  */
 export const WithLocalStorage: Story = {
   render: (args) => {
@@ -274,13 +273,19 @@ export const WithLocalStorage: Story = {
           criteria,
           tools,
           scores: scoresWithHistory,
-          persistKey: PERSIST_KEY,
-          persister: createLocalStoragePersister(),
+          repository: createLocalStorageRepository(PERSIST_PREFIX),
         }),
       [resetKey],
     );
     const handleClear = () => {
-      try { localStorage.removeItem(PERSIST_KEY); } catch {}
+      try {
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key?.startsWith(PERSIST_PREFIX)) keys.push(key);
+        }
+        keys.forEach((k) => localStorage.removeItem(k));
+      } catch {}
       setResetKey((k) => k + 1);
     };
     return (

@@ -19,3 +19,7 @@ export function toolId(): string {
 export function criterionId(): string {
   return `cri_${crypto.randomUUID()}`;
 }
+
+export function commitId(): string {
+  return `commit_${crypto.randomUUID()}`;
+}

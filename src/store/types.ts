@@ -1,5 +1,6 @@
 import type { ScoreEntry } from '../types';
-import type { PughEvent, Branch } from '../events/types';
+import type { PughEvent } from '../events/types';
+import type { Commit, BranchDiff } from '../repository/types';
 
 export interface PughDomainState {
   criteria: import('../types').Criterion[];
@@ -10,17 +11,27 @@ export interface PughDomainState {
 
 export interface PughEventStoreState {
   events: PughEvent[];
-  eventsByBranch: Record<string, PughEvent[]>;
-  branches: Branch[];
-  activeBranchId: string;
+  pendingEvents: PughEvent[];
+  activeBranch: string;
+  branchNames: string[];
+  commitLog: Commit[];
+  isLoading: boolean;
+  comparingBranch: string | null;
+  branchDiff: BranchDiff | null;
 }
 
 export interface PughEventStoreActions {
   dispatch: (event: PughEvent) => void;
   createBranch: (name: string) => void;
-  switchBranch: (branchId: string) => void;
-  renameBranch: (branchId: string, name: string) => void;
-  deleteBranch: (branchId: string) => void;
+  switchBranch: (branchName: string) => void;
+  renameBranch: (oldName: string, newName: string) => void;
+  deleteBranch: (branchName: string) => void;
+  commitPending: (comment?: string) => Promise<void>;
+  init: () => Promise<void>;
+  refreshBranches: () => Promise<void>;
+  compareBranch: (branchName: string) => void;
+  cancelCompare: () => void;
+  mergeBranch: (sourceBranch: string) => void;
 }
 
 export interface PughUIState {
