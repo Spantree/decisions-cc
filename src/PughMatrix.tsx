@@ -501,7 +501,7 @@ export default function PughMatrix({
         <Table.Root variant="surface" size="2">
           <Table.Header>
             <Table.Row>
-              <Table.ColumnHeaderCell justify="start">Criterion</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell justify="start" className="pugh-criterion-cell">Criterion</Table.ColumnHeaderCell>
               {showWeights && <Table.ColumnHeaderCell width="72px">Weight</Table.ColumnHeaderCell>}
               {options.map((option) => (
                 <Table.ColumnHeaderCell
@@ -827,6 +827,7 @@ export default function PughMatrix({
                               value={editScore}
                               onChange={(e) => handleEditScoreChange(e.target.value)}
                               onKeyDown={handleQuickEditKeyDown}
+                              onFocus={(e) => e.target.select()}
                               className="pugh-quick-edit-input"
                               autoFocus
                             />
