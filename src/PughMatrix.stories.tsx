@@ -116,7 +116,7 @@ const ratingsWithHistory: RatingEntry[] = [
   entry(svelteOpt.id, commCri.id, 7, t2, 'SvelteKit adoption boosted ecosystem'),
 ];
 
-// Ratings with dialog: comment-only follow-ups that don't overwrite scores
+// Ratings with dialog: comment-only follow-ups that don't overwrite ratings
 const ratingsWithDialog: RatingEntry[] = [
   ...ratingsWithHistory,
   commentOnly(reactOpt.id, costCri.id, 'But what about hosting?', t3),
@@ -250,13 +250,13 @@ export const WinnerDarkMode: Story = {
 };
 
 /** Cells with rating history — hover a cell to see previous ratings in a tooltip. */
-export const WithScoreHistory: Story = {
+export const WithRatingHistory: Story = {
   args: {
     ratings: ratingsWithHistory,
   },
 };
 
-/** Cells with comment-only follow-ups — the score persists while a dialog appears in hover history. */
+/** Cells with comment-only follow-ups — the rating persists while a dialog appears in hover history. */
 export const WithDialog: Story = {
   args: {
     ratings: ratingsWithDialog,
@@ -419,7 +419,7 @@ const ratingsBinary: RatingEntry[] = [
   entry(angularOpt.id, 'oss', 1, t1),
 ];
 
-/** Binary scale — yes/no criteria scored as 1/0. */
+/** Binary scale — yes/no criteria rated as 1/0. */
 export const BinaryScale: Story = {
   render: () => {
     const store = useMemo(
@@ -443,7 +443,7 @@ const TENTH_STEP: ScaleType = { kind: 'numeric', min: 0, max: 10, step: 0.1 };
 
 const criteriaDecimal: Criterion[] = [
   { id: 'rating', label: 'User Rating (0-5)', user: 'alice', scale: HALF_STEP },
-  { id: 'latency', label: 'Latency Score (0-10)', user: 'alice', scale: TENTH_STEP },
+  { id: 'latency', label: 'Latency Rating (0-10)', user: 'alice', scale: TENTH_STEP },
 ];
 
 const ratingsDecimal: RatingEntry[] = [

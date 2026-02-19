@@ -790,11 +790,14 @@ export default function PughMatrix({
                           className="pugh-quick-edit"
                           onClick={(e) => e.stopPropagation()}
                         >
+                          <span className="pugh-edit-hint">
+                            Enter a rating or comment
+                          </span>
                           {scale.kind === 'binary' ? (
                             <label className="pugh-binary-toggle">
                               <input
                                 type="checkbox"
-                                aria-label={`Score for ${option.label}, ${criterion.label}`}
+                                aria-label={`Rating for ${option.label}, ${criterion.label}`}
                                 checked={editScore === '1'}
                                 onChange={(e) => setEditScore(e.target.checked ? '1' : '0')}
                                 onKeyDown={handleQuickEditKeyDown}
@@ -808,10 +811,10 @@ export default function PughMatrix({
                               inputMode="decimal"
                               placeholder={
                                 scale.kind === 'unbounded'
-                                  ? '0+'
-                                  : `${scale.min}–${scale.max}`
+                                  ? 'Count (e.g. 228000)'
+                                  : `Rating ${scale.min} to ${scale.max}${scale.step !== 1 ? ` (step ${scale.step})` : ''}`
                               }
-                              aria-label={`Score for ${option.label}, ${criterion.label}`}
+                              aria-label={`Rating for ${option.label}, ${criterion.label}`}
                               value={editScore}
                               onChange={(e) => handleEditScoreChange(e.target.value)}
                               onKeyDown={handleQuickEditKeyDown}
@@ -979,8 +982,8 @@ export default function PughMatrix({
                   <Dialog.Title>{isCustom ? 'Custom Labels' : 'Label Preview'}</Dialog.Title>
                   <Dialog.Description size="2">
                     {isCustom
-                      ? 'Define labels for each score value. Min and max labels are required. Unlabeled scores round down to the nearest labeled value.'
-                      : 'Preview the labels for this set. Edit any value to create a custom set. Unlabeled scores round down to the nearest labeled value.'}
+                      ? 'Define labels for each rating value. Min and max labels are required. Unlabeled ratings round down to the nearest labeled value.'
+                      : 'Preview the labels for this set. Edit any value to create a custom set. Unlabeled ratings round down to the nearest labeled value.'}
                   </Dialog.Description>
                   <div className="pugh-custom-label-list">
                     {values.map((v) => {
@@ -994,7 +997,7 @@ export default function PughMatrix({
                           <input
                             type="text"
                             className="pugh-edit-input"
-                            aria-label={`Label for score ${v}`}
+                            aria-label={`Label for rating ${v}`}
                             placeholder={isCustom && isEndpoint ? 'Required' : 'Optional'}
                             value={editCustomLabels[v] ?? ''}
                             onChange={(e) => setEditCustomLabel(v, e.target.value)}
