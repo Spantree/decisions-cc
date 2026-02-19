@@ -24,6 +24,17 @@ export function seedEventsFromOptions(opts: SeedOptions): PughEvent[] {
       user: c.user,
       branchId: MAIN_BRANCH_ID,
     });
+    if (c.description) {
+      events.push({
+        id: eventId(),
+        type: 'CriterionDescriptionChanged',
+        criterionId: c.id,
+        description: c.description,
+        timestamp: now,
+        user: c.user,
+        branchId: MAIN_BRANCH_ID,
+      });
+    }
   }
 
   // Set explicit weights (overriding the default 10 from CriterionAdded)
@@ -53,6 +64,17 @@ export function seedEventsFromOptions(opts: SeedOptions): PughEvent[] {
       user: t.user,
       branchId: MAIN_BRANCH_ID,
     });
+    if (t.description) {
+      events.push({
+        id: eventId(),
+        type: 'OptionDescriptionChanged',
+        optionId: t.id,
+        description: t.description,
+        timestamp: now,
+        user: t.user,
+        branchId: MAIN_BRANCH_ID,
+      });
+    }
   }
 
   for (const s of opts.ratings ?? []) {

@@ -27,7 +27,7 @@
 
 .pugh-criterion-cell {
   font-weight: 600;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .pugh-weight-cell {
@@ -57,14 +57,17 @@
 }
 
 .pugh-rating-fill {
+  position: relative;
   border-radius: 6px;
   padding: 0.35rem 0.5rem;
+  min-height: 1.8rem;
   transition: background-color 0.15s ease;
 }
 
 .pugh-rating-cell-editable {
   cursor: pointer;
 }
+
 
 .pugh-rating-trigger {
   display: block;
@@ -116,19 +119,63 @@
   outline-offset: -1px;
 }
 
-/* Edit form */
-.pugh-edit-form {
+/* Quick-edit inline (replaces old .pugh-edit-form) */
+.pugh-quick-edit {
+  position: absolute;
+  inset: 0;
   display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  padding: 0.25rem;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem 0.3rem;
 }
 
-.pugh-edit-hint {
-  font-size: 0.7rem;
+.pugh-quick-edit-input {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0.15rem 0.1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  border: 1.5px solid var(--pugh-primary);
+  border-radius: 4px;
+  background: var(--pugh-bg);
   color: var(--pugh-text);
-  opacity: 0.6;
-  line-height: 1.2;
+}
+
+.pugh-quick-edit-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 1.5px rgba(46, 133, 85, 0.3);
+}
+
+.pugh-expand-button {
+  flex-shrink: 0;
+  padding: 0.1rem 0.2rem;
+  font-size: 0.75rem;
+  line-height: 1;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--pugh-primary);
+  transition: background-color 0.15s ease;
+}
+
+.pugh-expand-button:hover {
+  background: var(--pugh-head-bg);
+  border-color: var(--pugh-primary);
+}
+
+/* Detail modal */
+.pugh-detail-modal {
+  max-width: 420px;
+}
+
+.pugh-detail-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 .pugh-edit-input {
@@ -936,4 +983,105 @@
   cursor: not-allowed;
   border-color: var(--pugh-border-color);
   color: var(--pugh-text);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Description icon, textarea & rendered content                      */
+/* ------------------------------------------------------------------ */
+
+.pugh-header-label-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.pugh-description-inline {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--pugh-text);
+  opacity: 0.55;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+  cursor: help;
+  transition: opacity 0.15s ease;
+}
+.pugh-description-inline:hover { opacity: 0.85; }
+.pugh-criterion-cell .pugh-description-inline { max-width: 220px; }
+
+.pugh-description-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 3rem;
+  padding: 0.25rem 0.35rem;
+  font-size: 0.78rem;
+  border: 1px solid var(--pugh-border-color);
+  border-radius: 4px;
+  background: var(--pugh-bg);
+  color: var(--pugh-text);
+  resize: vertical;
+  font-family: inherit;
+}
+
+.pugh-description-textarea:focus {
+  outline: 2px solid var(--pugh-primary);
+  outline-offset: -1px;
+}
+
+.pugh-description-content {
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.pugh-description-content p {
+  margin: 0.3rem 0;
+}
+
+.pugh-description-content p:first-child {
+  margin-top: 0;
+}
+
+.pugh-description-content p:last-child {
+  margin-bottom: 0;
+}
+
+.pugh-description-content ul,
+.pugh-description-content ol {
+  padding-left: 1.4rem;
+  margin: 0.3rem 0;
+}
+
+.pugh-description-content code {
+  padding: 0.1rem 0.3rem;
+  font-size: 0.78rem;
+  background: var(--pugh-head-bg);
+  border-radius: 3px;
+}
+
+.pugh-description-content pre {
+  padding: 0.5rem;
+  background: var(--pugh-head-bg);
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 0.3rem 0;
+}
+
+.pugh-description-content pre code {
+  padding: 0;
+  background: none;
+}
+
+.pugh-description-content blockquote {
+  margin: 0.3rem 0;
+  padding-left: 0.7rem;
+  border-left: 3px solid var(--pugh-border-color);
+  opacity: 0.85;
+}
+
+.pugh-description-content a {
+  color: var(--pugh-primary);
+  text-decoration: underline;
 }

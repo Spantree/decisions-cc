@@ -50,8 +50,10 @@ export interface PughUIState {
   editHeaderScaleMax: string;
   editHeaderScaleStep: string;
   editHeaderLabelSetId: string;
+  editHeaderDescription: string;
   customLabelDrawerOpen: boolean;
   editCustomLabels: Record<number, string>;
+  detailModalOpen: boolean;
 }
 
 export interface PughActions {
@@ -84,10 +86,17 @@ export interface PughActions {
   setEditHeaderScaleMax: (max: string) => void;
   setEditHeaderScaleStep: (step: string) => void;
   setEditHeaderLabelSetId: (id: string) => void;
+  setEditHeaderDescription: (description: string) => void;
+  setCriterionDescription: (id: string, description: string) => void;
+  setOptionDescription: (id: string, description: string) => void;
   saveHeaderEdit: () => void;
   setCustomLabelDrawerOpen: (open: boolean) => void;
   setEditCustomLabel: (value: number, label: string) => void;
   applyCustomLabels: () => void;
+  openDetailModal: () => void;
+  closeDetailModal: () => void;
+  saveAndNavigate: (direction: 'right' | 'left' | 'down' | 'up') => void;
+  startEditingWithPreFill: (optionId: string, criterionId: string) => void;
 }
 
 export type PughStore = PughDomainState & PughEventStoreState & PughEventStoreActions & PughUIState & PughActions;

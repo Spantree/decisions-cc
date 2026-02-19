@@ -550,6 +550,82 @@ const ratingsSigned: RatingEntry[] = [
   entry(angularOpt.id, 'effort', 3, t1),
 ];
 
+/* ------------------------------------------------------------------ */
+/*  Descriptions story                                                 */
+/* ------------------------------------------------------------------ */
+
+const criteriaWithDesc: Criterion[] = [
+  {
+    id: 'cost', label: 'Cost', user: 'alice', scale: NUMERIC_1_10_COST,
+    description: 'Total cost of ownership including:\n- **License fees**\n- Hosting & infrastructure\n- Developer training',
+  },
+  {
+    id: 'performance', label: 'Performance', user: 'alice', scale: NUMERIC_1_10_BARE,
+    description: 'Runtime performance measured via [Lighthouse](https://developer.chrome.com/docs/lighthouse) scores and `Time to Interactive`.',
+  },
+  {
+    id: 'ease-of-use', label: 'Ease of Use', user: 'alice', scale: NUMERIC_1_10_BARE,
+  },
+  {
+    id: 'community', label: 'Community Support', user: 'alice', scale: NUMERIC_1_10_BARE,
+    description: '> A strong community reduces risk.\n\nLook at GitHub issues, Discord activity, and Stack Overflow answers.',
+  },
+  {
+    id: 'docs', label: 'Documentation', user: 'alice', scale: NUMERIC_1_10,
+  },
+];
+
+const optionsWithDesc: Option[] = [
+  {
+    id: 'react', label: 'React', user: 'alice',
+    description: 'Meta-backed library with the **largest ecosystem**.\n\n1. Virtual DOM\n2. JSX syntax\n3. Huge third-party library support',
+  },
+  { id: 'vue', label: 'Vue', user: 'alice', description: 'Progressive framework — easy to adopt incrementally.' },
+  { id: 'svelte', label: 'Svelte', user: 'alice' },
+  {
+    id: 'angular', label: 'Angular', user: 'alice',
+    description: 'Full-featured framework by Google with built-in:\n- Routing\n- Forms\n- `HttpClient`\n- Dependency injection',
+  },
+];
+
+const ratingsForDesc: RatingEntry[] = [
+  entry('react', 'cost', 10, t1),
+  entry('react', 'performance', 7, t1),
+  entry('react', 'ease-of-use', 6, t1),
+  entry('react', 'community', 10, t1),
+  entry('react', 'docs', 8, t1),
+  entry('vue', 'cost', 10, t1),
+  entry('vue', 'performance', 8, t1),
+  entry('vue', 'ease-of-use', 9, t1),
+  entry('vue', 'community', 7, t1),
+  entry('vue', 'docs', 9, t1),
+  entry('svelte', 'cost', 10, t1),
+  entry('svelte', 'performance', 10, t1),
+  entry('svelte', 'ease-of-use', 8, t1),
+  entry('svelte', 'community', 5, t1),
+  entry('svelte', 'docs', 7, t1),
+  entry('angular', 'cost', 8, t1),
+  entry('angular', 'performance', 6, t1),
+  entry('angular', 'ease-of-use', 4, t1),
+  entry('angular', 'community', 8, t1),
+  entry('angular', 'docs', 8, t1),
+];
+
+/** Criteria and options with markdown descriptions — truncated previews shown inline, hover to see full rendered content. */
+export const WithDescriptions: Story = {
+  render: () => {
+    const store = useMemo(
+      () => createPughStore({ criteria: criteriaWithDesc, options: optionsWithDesc, ratings: ratingsForDesc }),
+      [],
+    );
+    return (
+      <PughStoreProvider store={store}>
+        <PughMatrix />
+      </PughStoreProvider>
+    );
+  },
+};
+
 /** Signed scale — matrix with allowNegative and -5 to +5 range. Negative=red, zero=yellow, positive=green. */
 export const SignedScale: Story = {
   render: () => {
