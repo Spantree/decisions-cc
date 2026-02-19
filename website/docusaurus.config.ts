@@ -7,7 +7,7 @@ const config: Config = {
   tagline: 'Pugh decision matrix React component for weighted multi-criteria evaluation',
   favicon: 'img/favicon.ico',
 
-  url: 'https://spantree.github.io',
+  url: 'https://decisions.cc',
   baseUrl: '/',
 
   organizationName: 'Spantree',
@@ -53,7 +53,7 @@ const config: Config = {
           label: 'Docs',
         },
         {
-          href: 'https://decisionapp.pages.dev/',
+          href: 'https://storybook.decisions.cc/',
           label: 'Storybook',
           position: 'left',
         },
@@ -85,7 +85,7 @@ const config: Config = {
           items: [
             {
               label: 'Storybook',
-              href: 'https://decisionapp.pages.dev/',
+              href: 'https://storybook.decisions.cc/',
             },
             {
               label: 'GitHub',
