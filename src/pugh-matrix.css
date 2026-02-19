@@ -150,22 +150,20 @@
 
 .pugh-expand-button {
   flex-shrink: 0;
-  padding: 0.15rem 0.35rem;
-  font-size: 0.85rem;
+  padding: 0.1rem 0.2rem;
+  font-size: 0.75rem;
   line-height: 1;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 4px;
   cursor: pointer;
-  color: var(--pugh-text);
-  opacity: 0.5;
-  transition: opacity 0.15s ease, background-color 0.15s ease;
+  color: var(--pugh-primary);
+  transition: background-color 0.15s ease;
 }
 
 .pugh-expand-button:hover {
-  opacity: 1;
   background: var(--pugh-head-bg);
-  border-color: var(--pugh-border-color);
+  border-color: var(--pugh-primary);
 }
 
 /* Detail modal */

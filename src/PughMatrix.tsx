@@ -816,7 +816,7 @@ export default function PughMatrix({
                             aria-label="Edit details"
                             onClick={openDetailModal}
                           >
-                            ⋯
+                            &#9998;
                           </button>
                         </div>
                       ) : history && history.length > 0 ? (
