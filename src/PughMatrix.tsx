@@ -983,7 +983,7 @@ export default function PughMatrix({
                   <Dialog.Description size="2">
                     {isCustom
                       ? 'Define labels for each rating value. Min and max labels are required. Unlabeled ratings round down to the nearest labeled value.'
-                      : 'Preview the labels for this set. Edit any value to create a custom set. Unlabeled ratings round down to the nearest labeled value.'}
+                      : 'Unlabeled ratings round down to the nearest labeled value.'}
                   </Dialog.Description>
                   <div className="pugh-custom-label-list">
                     {values.map((v) => {
@@ -994,38 +994,54 @@ export default function PughMatrix({
                             {v}
                             {isCustom && isEndpoint && <span className="pugh-custom-label-required">*</span>}
                           </span>
-                          <input
-                            type="text"
-                            className="pugh-edit-input"
-                            aria-label={`Label for rating ${v}`}
-                            placeholder={isCustom && isEndpoint ? 'Required' : 'Optional'}
-                            value={editCustomLabels[v] ?? ''}
-                            onChange={(e) => setEditCustomLabel(v, e.target.value)}
-                          />
+                          {isCustom ? (
+                            <input
+                              type="text"
+                              className="pugh-edit-input"
+                              aria-label={`Label for rating ${v}`}
+                              placeholder={isEndpoint ? 'Required' : 'Optional'}
+                              value={editCustomLabels[v] ?? ''}
+                              onChange={(e) => setEditCustomLabel(v, e.target.value)}
+                            />
+                          ) : (
+                            <span className="pugh-label-preview">
+                              {editCustomLabels[v] || '—'}
+                            </span>
+                          )}
                         </div>
                       );
                     })}
                   </div>
                   <div className="pugh-custom-label-actions">
-                    <button
-                      type="button"
-                      className="pugh-clear-button"
-                      disabled={Object.keys(editCustomLabels).length === 0}
-                      onClick={() => {
-                        for (const v of values) {
-                          setEditCustomLabel(v, '');
-                        }
-                      }}
-                    >
-                      Clear All
-                    </button>
+                    {isCustom && (
+                      <button
+                        type="button"
+                        className="pugh-clear-button"
+                        disabled={Object.keys(editCustomLabels).length === 0}
+                        onClick={() => {
+                          for (const v of values) {
+                            setEditCustomLabel(v, '');
+                          }
+                        }}
+                      >
+                        Clear All
+                      </button>
+                    )}
                     <div className="pugh-edit-actions">
-                      <button type="button" disabled={!isValid} onClick={applyCustomLabels}>
-                        {isCustom ? 'Apply' : 'Apply as Custom'}
-                      </button>
-                      <button type="button" onClick={() => setCustomLabelDrawerOpen(false)}>
-                        {isCustom ? 'Cancel' : 'Close'}
-                      </button>
+                      {isCustom ? (
+                        <>
+                          <button type="button" disabled={!isValid} onClick={applyCustomLabels}>
+                            Apply
+                          </button>
+                          <button type="button" onClick={() => setCustomLabelDrawerOpen(false)}>
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <button type="button" onClick={() => setCustomLabelDrawerOpen(false)}>
+                          Close
+                        </button>
+                      )}
                     </div>
                   </div>
                 </>

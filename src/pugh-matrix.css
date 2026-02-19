@@ -911,6 +911,14 @@
   min-width: 0;
 }
 
+.pugh-label-preview {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+  color: var(--pugh-text);
+  opacity: 0.7;
+}
+
 .pugh-custom-label-drawer .pugh-edit-actions button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
