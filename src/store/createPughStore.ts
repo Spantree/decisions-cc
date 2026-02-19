@@ -152,26 +152,40 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
       },
 
       init: async () => {
+        async function seedFresh() {
+          if (initialEvents.length > 0) {
+            await repository.commit('main', initialEvents, 'system', 'Initial seed');
+          } else {
+            await repository.commit('main', [], 'system', 'Initial empty commit');
+          }
+          const commitLog = await repository.log('main');
+          set({ commitLog, isLoading: false }, false, 'init/seed');
+        }
+
         try {
           const mainRef = await repository.refs.getRef('main');
           if (mainRef) {
             // Existing repo — hydrate from it
             const events = await repository.checkout('main');
             const domain = projectEvents(events);
-            const commitLog = await repository.log('main');
-            const refs = await repository.refs.listRefs();
-            const branchNames = refs.filter((r) => r.type === 'branch').map((r) => r.name);
-            set({ events, ...domain, commitLog, branchNames, activeBranch: 'main', isLoading: false }, false, 'init/hydrate');
-          } else {
-            // No repo yet — commit seed events
-            if (initialEvents.length > 0) {
-              await repository.commit('main', initialEvents, 'system', 'Initial seed');
+
+            // Detect stale/incompatible stored data: if seed provided
+            // options but hydration produced none, wipe and re-seed.
+            const seedDomain = projectEvents(initialEvents);
+            const isStale =
+              seedDomain.options.length > 0 && domain.options.length === 0;
+
+            if (isStale) {
+              await repository.refs.deleteRef('main');
+              await seedFresh();
             } else {
-              // Create an empty initial commit so the main ref exists
-              await repository.commit('main', [], 'system', 'Initial empty commit');
+              const commitLog = await repository.log('main');
+              const refs = await repository.refs.listRefs();
+              const branchNames = refs.filter((r) => r.type === 'branch').map((r) => r.name);
+              set({ events, ...domain, commitLog, branchNames, activeBranch: 'main', isLoading: false }, false, 'init/hydrate');
             }
-            const commitLog = await repository.log('main');
-            set({ commitLog, isLoading: false }, false, 'init/seed');
+          } else {
+            await seedFresh();
           }
         } catch {
           // On error, still mark as loaded so the UI isn't stuck

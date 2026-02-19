@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { within, userEvent } from 'storybook/test';
 import PughMatrix from './PughMatrix';
@@ -316,13 +316,9 @@ export const Neg2ToPos2Scale: Story = {
 
 const PERSIST_PREFIX = 'pugh-storybook-demo';
 
-/**
- * Store with localStorage persistence — edits survive page reloads.
- * Click any cell to add a score. Use "Clear saved data" to reset to defaults.
- */
+/** Store with localStorage persistence — edits survive page reloads. */
 export const WithLocalStorage: Story = {
   render: (args) => {
-    const [resetKey, setResetKey] = useState(0);
     const store = useMemo(
       () =>
         createPughStore({
@@ -331,38 +327,16 @@ export const WithLocalStorage: Story = {
           ratings: ratingsWithHistory,
           repository: createLocalStorageRepository(PERSIST_PREFIX),
         }),
-      [resetKey],
+      [],
     );
-    const handleClear = () => {
-      try {
-        const keys = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key?.startsWith(PERSIST_PREFIX)) keys.push(key);
-        }
-        keys.forEach((k) => localStorage.removeItem(k));
-      } catch {}
-      setResetKey((k) => k + 1);
-    };
     return (
-      <div>
-        <div style={{ marginBottom: 8 }}>
-          <button
-            type="button"
-            onClick={handleClear}
-            style={{ fontSize: 13, cursor: 'pointer', padding: '4px 10px' }}
-          >
-            Clear saved data
-          </button>
-        </div>
-        <PughStoreProvider store={store}>
-          <PughMatrix
-            highlight={args.highlight}
-            showWinner={args.showWinner}
-            isDark={args.isDark}
-          />
-        </PughStoreProvider>
-      </div>
+      <PughStoreProvider store={store}>
+        <PughMatrix
+          highlight={args.highlight}
+          showWinner={args.showWinner}
+          isDark={args.isDark}
+        />
+      </PughStoreProvider>
     );
   },
 };
