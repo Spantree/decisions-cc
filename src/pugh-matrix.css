@@ -266,6 +266,79 @@
   color: #fff;
 }
 
+/* Criterion header edit column (vertical layout with selects) */
+.pugh-header-edit-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.pugh-header-select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.2rem 0.3rem;
+  font-size: inherit;
+  border: 1px solid var(--pugh-border-color);
+  border-radius: 4px;
+  background: var(--pugh-bg);
+  color: var(--pugh-text);
+}
+
+.pugh-header-select:focus {
+  outline: 2px solid var(--pugh-primary);
+  outline-offset: -1px;
+}
+
+/* Scale parameter inputs (min/max/step) */
+.pugh-scale-params {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.pugh-scale-params label {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.pugh-scale-input {
+  width: 52px;
+  box-sizing: border-box;
+  padding: 0.2rem 0.3rem;
+  font-size: inherit;
+  border: 1px solid var(--pugh-border-color);
+  border-radius: 4px;
+  background: var(--pugh-bg);
+  color: var(--pugh-text);
+}
+
+.pugh-scale-input:focus {
+  outline: 2px solid var(--pugh-primary);
+  outline-offset: -1px;
+}
+
+/* Binary toggle in edit form */
+.pugh-binary-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.2rem 0;
+}
+
+.pugh-binary-toggle input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  cursor: pointer;
+  accent-color: var(--pugh-primary);
+}
+
 /* Header edit row (input + trash) */
 .pugh-header-edit-row {
   display: flex;
@@ -727,4 +800,140 @@
 .pugh-branch-close-button:hover {
   background: var(--pugh-head-bg);
   border-color: var(--pugh-text);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Custom label drawer (right-side sheet)                             */
+/* ------------------------------------------------------------------ */
+
+.pugh-custom-label-drawer {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: auto !important;
+  width: 340px;
+  max-width: 90vw;
+  height: 100vh;
+  max-height: 100vh !important;
+  border-radius: 0 !important;
+  transform: none !important;
+  animation: pugh-slide-in-right 0.2s ease-out;
+  overflow-y: auto;
+}
+
+@keyframes pugh-slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.pugh-custom-label-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.pugh-custom-label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pugh-custom-label-value {
+  min-width: 2.5rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.pugh-custom-label-required {
+  color: #ef4444;
+  margin-left: 0.15rem;
+}
+
+.pugh-custom-label-row .pugh-edit-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.pugh-custom-label-drawer .pugh-edit-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pugh-custom-label-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+}
+
+.pugh-clear-button {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--pugh-border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--pugh-text);
+  opacity: 0.7;
+}
+
+.pugh-clear-button:hover:not(:disabled) {
+  opacity: 1;
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.pugh-clear-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Labelset row: select + edit button side by side */
+.pugh-labelset-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pugh-labelset-row .pugh-header-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.pugh-custom-edit-button {
+  flex-shrink: 0;
+  padding: 0.2rem 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--pugh-primary);
+  background: transparent;
+  border: 1px solid var(--pugh-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.pugh-custom-edit-button:hover:not(:disabled) {
+  background: var(--pugh-primary);
+  color: #fff;
+}
+
+.pugh-custom-edit-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: var(--pugh-border-color);
+  color: var(--pugh-text);
 }

@@ -1,4 +1,4 @@
-import type { ScoreEntry } from '../types';
+import type { ScoreEntry, ScaleType, MatrixConfig } from '../types';
 import type { PughEvent } from '../events/types';
 import type { Commit, BranchDiff } from '../repository/types';
 
@@ -7,6 +7,7 @@ export interface PughDomainState {
   tools: import('../types').Tool[];
   scores: ScoreEntry[];
   weights: Record<string, number>;
+  matrixConfig: MatrixConfig;
 }
 
 export interface PughEventStoreState {
@@ -37,12 +38,20 @@ export interface PughEventStoreActions {
 export interface PughUIState {
   showTotals: boolean;
   showWeights: boolean;
+  showLabels: boolean;
   editingCell: { toolId: string; criterionId: string } | null;
   editScore: string;
   editLabel: string;
   editComment: string;
   editingHeader: { type: 'tool' | 'criterion'; id: string } | null;
   editHeaderValue: string;
+  editHeaderScaleKind: string;
+  editHeaderScaleMin: string;
+  editHeaderScaleMax: string;
+  editHeaderScaleStep: string;
+  editHeaderLabelSetId: string;
+  customLabelDrawerOpen: boolean;
+  editCustomLabels: Record<number, string>;
 }
 
 export interface PughActions {
@@ -52,6 +61,8 @@ export interface PughActions {
   toggleTotals: () => void;
   setShowWeights: (show: boolean) => void;
   toggleWeights: () => void;
+  setShowLabels: (show: boolean) => void;
+  toggleLabels: () => void;
   startEditing: (toolId: string, criterionId: string) => void;
   cancelEditing: () => void;
   setEditScore: (score: string) => void;
@@ -63,10 +74,20 @@ export interface PughActions {
   removeTool: (id: string) => void;
   addCriterion: (id: string, label: string) => void;
   removeCriterion: (id: string) => void;
+  setCriterionScale: (id: string, scale: ScaleType) => void;
+  setMatrixDefaultScale: (scale: ScaleType) => void;
   startEditingHeader: (type: 'tool' | 'criterion', id: string) => void;
   cancelEditingHeader: () => void;
   setEditHeaderValue: (value: string) => void;
+  setEditHeaderScaleKind: (kind: string) => void;
+  setEditHeaderScaleMin: (min: string) => void;
+  setEditHeaderScaleMax: (max: string) => void;
+  setEditHeaderScaleStep: (step: string) => void;
+  setEditHeaderLabelSetId: (id: string) => void;
   saveHeaderEdit: () => void;
+  setCustomLabelDrawerOpen: (open: boolean) => void;
+  setEditCustomLabel: (value: number, label: string) => void;
+  applyCustomLabels: () => void;
 }
 
 export type PughStore = PughDomainState & PughEventStoreState & PughEventStoreActions & PughUIState & PughActions;

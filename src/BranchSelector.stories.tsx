@@ -6,12 +6,17 @@ import { createPughStore } from './store/createPughStore';
 import { createLocalStorageRepository } from './repository/localStorage';
 import { PughStoreProvider } from './store/PughStoreProvider';
 import { scoreId, toolId as makeToolId } from './ids';
+import { LABELS_COST_1_10 } from './types';
+import type { ScaleType } from './types';
 import './pugh-matrix.css';
 
+const NUMERIC_1_10_COST: ScaleType = { kind: 'numeric', min: 1, max: 10, step: 1, labels: LABELS_COST_1_10.labels };
+const NUMERIC_1_10_BARE: ScaleType = { kind: 'numeric', min: 1, max: 10, step: 1 };
+
 const criteria = [
-  { id: 'cost', label: 'Cost', user: 'alice' },
-  { id: 'performance', label: 'Performance', user: 'alice' },
-  { id: 'ease-of-use', label: 'Ease of Use', user: 'alice' },
+  { id: 'cost', label: 'Cost', user: 'alice', scale: NUMERIC_1_10_COST },
+  { id: 'performance', label: 'Performance', user: 'alice', scale: NUMERIC_1_10_BARE },
+  { id: 'ease-of-use', label: 'Ease of Use', user: 'alice', scale: NUMERIC_1_10_BARE },
 ];
 const tools = [
   { id: 'react', label: 'React', user: 'alice' },
@@ -55,15 +60,15 @@ function StoryBranchSelector({
           const t = Date.now();
 
           // -- main: moderate baseline --
-          state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: costCri.id, score: 5, label: 'Moderate', timestamp: t, user: 'alice' });
-          state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: perfCri.id, score: 6, label: 'Decent', timestamp: t, user: 'alice' });
-          state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: eouCri.id, score: 5, label: 'Average', timestamp: t, user: 'alice' });
-          state().addScore({ id: scoreId(), toolId: vueTool.id, criterionId: costCri.id, score: 6, label: 'Fair', timestamp: t, user: 'alice' });
-          state().addScore({ id: scoreId(), toolId: vueTool.id, criterionId: perfCri.id, score: 5, label: 'OK', timestamp: t, user: 'alice' });
-          state().addScore({ id: scoreId(), toolId: vueTool.id, criterionId: eouCri.id, score: 7, label: 'Good', timestamp: t, user: 'alice' });
-          state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: costCri.id, score: 7, label: 'Cheap', timestamp: t, user: 'alice' });
-          state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: perfCri.id, score: 6, label: 'Decent', timestamp: t, user: 'alice' });
-          state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: eouCri.id, score: 5, label: 'Average', timestamp: t, user: 'alice' });
+          state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: costCri.id, score: 5, timestamp: t, user: 'alice' });
+          state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: perfCri.id, score: 6, timestamp: t, user: 'alice' });
+          state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: eouCri.id, score: 5, timestamp: t, user: 'alice' });
+          state().addScore({ id: scoreId(), toolId: vueTool.id, criterionId: costCri.id, score: 6, timestamp: t, user: 'alice' });
+          state().addScore({ id: scoreId(), toolId: vueTool.id, criterionId: perfCri.id, score: 5, timestamp: t, user: 'alice' });
+          state().addScore({ id: scoreId(), toolId: vueTool.id, criterionId: eouCri.id, score: 7, timestamp: t, user: 'alice' });
+          state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: costCri.id, score: 7, timestamp: t, user: 'alice' });
+          state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: perfCri.id, score: 6, timestamp: t, user: 'alice' });
+          state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: eouCri.id, score: 5, timestamp: t, user: 'alice' });
 
           // -- 'pro-react': Bob loves React --
           setTimeout(() => {
@@ -71,9 +76,9 @@ function StoryBranchSelector({
             setTimeout(() => {
               const angularId = makeToolId();
               state().addTool(angularId, 'Angular', 'bob');
-              state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: costCri.id, score: 10, label: 'Free!', timestamp: t + 1, user: 'bob' });
-              state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: perfCri.id, score: 10, label: 'Blazing', timestamp: t + 1, user: 'bob' });
-              state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: eouCri.id, score: 9, label: 'Great DX', timestamp: t + 1, user: 'bob' });
+              state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: costCri.id, score: 10, timestamp: t + 1, user: 'bob' });
+              state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: perfCri.id, score: 10, timestamp: t + 1, user: 'bob' });
+              state().addScore({ id: scoreId(), toolId: reactTool.id, criterionId: eouCri.id, score: 9, timestamp: t + 1, user: 'bob' });
 
               // -- 'svelte-wins': switch back to main, then fork --
               setTimeout(() => {
@@ -83,9 +88,9 @@ function StoryBranchSelector({
                   setTimeout(() => {
                     state().removeTool(reactTool.id);
                     state().renameCriterion(eouCri.id, 'Developer Joy');
-                    state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: costCri.id, score: 10, label: 'Free', timestamp: t + 2, user: 'carol' });
-                    state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: perfCri.id, score: 10, label: 'Fastest', timestamp: t + 2, user: 'carol' });
-                    state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: eouCri.id, score: 10, label: 'Joyful', timestamp: t + 2, user: 'carol' });
+                    state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: costCri.id, score: 10, timestamp: t + 2, user: 'carol' });
+                    state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: perfCri.id, score: 10, timestamp: t + 2, user: 'carol' });
+                    state().addScore({ id: scoreId(), toolId: svelteTool.id, criterionId: eouCri.id, score: 10, timestamp: t + 2, user: 'carol' });
 
                     // Start on main
                     setTimeout(() => state().switchBranch('main'), 50);

@@ -20,6 +20,12 @@ function describeEvent(event: PughEvent): string {
       return event.label ? `Set score: ${event.label}` : event.score != null ? `Set score: ${event.score}` : 'Set score';
     case 'WeightSet':
       return `Set weight to ${event.weight}`;
+    case 'CriterionScaleOverridden':
+      return `Changed scale for criterion`;
+    case 'MatrixCreated':
+      return `Created matrix "${event.title}"`;
+    case 'MatrixDefaultScaleSet':
+      return `Changed default scale`;
   }
 }
 
