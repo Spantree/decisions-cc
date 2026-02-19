@@ -6,3 +6,7 @@ dist
 storybook-static
 test-results
 .playwright-mcp
+website/build
+website/.docusaurus
+website/node_modules
+docs/getting-started.md

@@ -15,7 +15,10 @@
 * [ADR-0011](0011-lazy-loaded-radar-chart.md) - Lazy-Loaded Radar Chart with Recharts
 * [ADR-0012](0012-stale-data-auto-recovery.md) - Auto-Detect Stale Stored Data and Re-Seed
 * [ADR-0013](0013-table-layout-drawer-and-mobile-read-only.md) - Fixed-Width Columns, Drawer UI, and Mobile Read-Only
+* [ADR-0014](0014-docusaurus-documentation-site.md) - Docusaurus Documentation Site
 
 <!-- adrlogstop -->
+
+
 
 
