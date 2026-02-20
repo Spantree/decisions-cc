@@ -5,6 +5,7 @@
   "scripts": {
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
+    "prebuild": "printf -- '---\\ntitle: Getting Started\\nslug: /\\nsidebar_position: 1\\n---\\n\\n' > ../docs/getting-started.md && cat ../README.md >> ../docs/getting-started.md",
     "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
