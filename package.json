@@ -31,6 +31,8 @@
     "test": "vitest run",
     "test:unit": "vitest run --project unit",
     "test:watch": "vitest --project unit",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
     "docs": "npm start --prefix website",
     "docs:build": "npm run build --prefix website",
     "docs:serve": "npm run serve --prefix website"
@@ -53,6 +55,7 @@
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.0.1",
+    "@eslint/js": "^10.0.1",
     "@radix-ui/themes": "^3.3.0",
     "@storybook/addon-a11y": "^10.2.8",
     "@storybook/addon-docs": "^10.2.8",
@@ -64,6 +67,7 @@
     "@vitest/coverage-v8": "^4.0.18",
     "adr-log": "^2.2.0",
     "chromatic": "^15.1.0",
+    "eslint": "^10.0.1",
     "markdownlint-cli": "^0.47.0",
     "playwright": "^1.58.2",
     "react": "^19.0.0",
@@ -71,6 +75,7 @@
     "storybook": "^10.2.8",
     "tsup": "^8.0.0",
     "typescript": "^5.6.0",
+    "typescript-eslint": "^8.56.0",
     "vitest": "^4.0.18"
   },
   "license": "MIT",

@@ -35,7 +35,7 @@ export interface CellDetailDrawerProps {
   readOnly: boolean;
 }
 
-export default function CellDetailDrawer({ isDark, readOnly }: CellDetailDrawerProps) {
+export default function CellDetailDrawer({ isDark: _isDark, readOnly }: CellDetailDrawerProps) {
   const drawerCell = usePughStore((s) => s.drawerCell);
   const closeDrawer = usePughStore((s) => s.closeDrawer);
   const criteria = usePughStore((s) => s.criteria);
