@@ -54,20 +54,70 @@ export default function CellDetailDrawer({ isDark: _isDark, readOnly }: CellDeta
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
 
-  // Tag the Radix overlay ancestor so we can style it without :has()
-  // (which gets stripped by some CSS bundlers like Docusaurus/PostCSS).
-  // Uses querySelector instead of ref because Radix Dialog portals
-  // may not forward refs reliably to the content element.
+  // Apply critical layout styles directly via JS because:
+  // 1. :has() selectors get stripped by PostCSS (Docusaurus)
+  // 2. Class-based CSS rules (.pugh-drawer-overlay) also get stripped
+  //    by some CSS bundlers that tree-shake or transform imported CSS
+  // Inline styles bypass all CSS bundler pipelines entirely.
   useEffect(() => {
     if (!drawerCell) return;
     const frame = requestAnimationFrame(() => {
-      const el = document.querySelector('.pugh-cell-detail-drawer');
-      if (!el) return;
-      let overlay: Element | null = el.parentElement;
+      const drawer = document.querySelector('.pugh-cell-detail-drawer') as HTMLElement | null;
+      if (!drawer) return;
+
+      // Style the drawer itself
+      Object.assign(drawer.style, {
+        position: 'fixed',
+        top: '0',
+        right: '0',
+        bottom: '0',
+        left: 'auto',
+        zIndex: '9999',
+        pointerEvents: 'auto',
+        background: 'var(--pugh-bg, #fff)',
+        boxShadow: '-4px 0 24px rgba(0, 0, 0, 0.15)',
+        padding: '1.25rem',
+        boxSizing: 'border-box',
+      });
+
+      // Walk up to find and style the overlay ancestor
+      let overlay = drawer.parentElement as HTMLElement | null;
       while (overlay && !overlay.classList.contains('rt-DialogOverlay')) {
-        overlay = overlay.parentElement;
+        overlay = overlay.parentElement as HTMLElement | null;
       }
-      if (overlay) overlay.classList.add('pugh-drawer-overlay');
+      if (overlay) {
+        overlay.classList.add('pugh-drawer-overlay');
+        Object.assign(overlay.style, {
+          position: 'fixed',
+          inset: '0',
+          zIndex: '9998',
+          background: 'rgba(0, 0, 0, 0.4)',
+          height: 'auto',
+        });
+
+        // Style the scroll wrapper
+        const scroll = overlay.querySelector('.rt-DialogScroll') as HTMLElement | null;
+        if (scroll) {
+          Object.assign(scroll.style, {
+            position: 'fixed',
+            inset: '0',
+            height: 'auto',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            pointerEvents: 'none',
+          });
+        }
+
+        // Style the padding wrapper
+        const padding = overlay.querySelector('.rt-DialogScrollPadding') as HTMLElement | null;
+        if (padding) {
+          Object.assign(padding.style, {
+            position: 'static',
+            height: 'auto',
+            pointerEvents: 'none',
+          });
+        }
+      }
     });
     return () => {
       cancelAnimationFrame(frame);
