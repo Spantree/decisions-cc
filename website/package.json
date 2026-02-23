@@ -20,8 +20,11 @@
     "@mdx-js/react": "^3.0.0",
     "clsx": "^2.0.0",
     "prism-react-renderer": "^2.3.0",
+    "@radix-ui/themes": "^3.3.0",
+    "decisions-cc": "file:..",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "3.9.2",
