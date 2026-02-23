@@ -158,6 +158,32 @@ const ratings: RatingEntry[] = [
     'Standard pattern but no ecosystem or tooling around it.', 'Average'),
 ];
 
+function ViewToggle() {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { usePughStore } = require('decisions-cc');
+  const view = usePughStore((s: { view: string }) => s.view);
+  const toggleView = usePughStore((s: { toggleView: () => void }) => s.toggleView);
+
+  return (
+    <button
+      onClick={toggleView}
+      type="button"
+      style={{
+        margin: '0.75rem 0',
+        padding: '0.35rem 1rem',
+        border: '1px solid var(--ifm-color-emphasis-300)',
+        borderRadius: '4px',
+        background: 'var(--ifm-background-surface-color)',
+        color: 'var(--ifm-font-color-base)',
+        cursor: 'pointer',
+        fontSize: '0.85rem',
+      }}
+    >
+      {view === 'table' ? 'Show Chart' : 'Show Table'}
+    </button>
+  );
+}
+
 function MatrixClient() {
   const { colorMode } = useColorMode();
   const {
@@ -191,6 +217,7 @@ function MatrixClient() {
           isDark={colorMode === 'dark'}
           readOnly
         />
+        <ViewToggle />
       </PughStoreProvider>
     </div>
   );
