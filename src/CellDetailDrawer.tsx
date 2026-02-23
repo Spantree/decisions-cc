@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog } from '@radix-ui/themes';
 import type { RatingEntry, ScaleType } from './types';
 import { getEffectiveScale, resolveScoreLabel, formatCount } from './types';
@@ -53,6 +53,27 @@ export default function CellDetailDrawer({ isDark: _isDark, readOnly }: CellDeta
 
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
+
+  // Tag the Radix overlay ancestor so we can style it without :has()
+  // (which gets stripped by some CSS bundlers like Docusaurus/PostCSS).
+  // Uses querySelector instead of ref because Radix Dialog portals
+  // may not forward refs reliably to the content element.
+  useEffect(() => {
+    if (!drawerCell) return;
+    const frame = requestAnimationFrame(() => {
+      const el = document.querySelector('.pugh-cell-detail-drawer');
+      if (!el) return;
+      let overlay: Element | null = el.parentElement;
+      while (overlay && !overlay.classList.contains('rt-DialogOverlay')) {
+        overlay = overlay.parentElement;
+      }
+      if (overlay) overlay.classList.add('pugh-drawer-overlay');
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      document.querySelector('.pugh-drawer-overlay')?.classList.remove('pugh-drawer-overlay');
+    };
+  }, [drawerCell]);
 
   if (!drawerCell) return null;
 
@@ -135,7 +156,7 @@ export default function CellDetailDrawer({ isDark: _isDark, readOnly }: CellDeta
 
   return (
     <Dialog.Root open={!!drawerCell} onOpenChange={(open) => { if (!open) closeDrawer(); }}>
-      <Dialog.Content className="pugh-cell-detail-drawer">
+      <Dialog.Content className="pugh-cell-detail-drawer" aria-describedby={undefined}>
         <Dialog.Title>
           {criterion.label} / {option.label}
         </Dialog.Title>
