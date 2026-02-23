@@ -7,7 +7,7 @@ import type { PughEvent } from '../events/types';
 import type { MatrixRepository } from '../repository/types';
 import { projectEvents } from '../events/projection';
 import { seedEventsFromOptions } from '../events/seedFromLegacy';
-import { eventId, commentId, MAIN_BRANCH_ID } from '../ids';
+import { eventId, commentId } from '../ids';
 import { createMemoryRepository } from '../repository/memory';
 
 export interface CreatePughStoreOptions {

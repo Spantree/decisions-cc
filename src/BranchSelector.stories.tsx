@@ -104,7 +104,6 @@ function StoryBranchSelector({
     }
 
     return s;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prePopulateBranches, persistPrefix, resetKey]);
 
   const handleClear = persistPrefix

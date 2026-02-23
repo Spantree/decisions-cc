@@ -1,6 +1,5 @@
-import type { PughEvent } from '../events/types';
 import { commitId as makeCommitId } from '../ids';
-import type { Commit, MatrixRepository, MergeStrategy, ObjectStore, RefStore } from './types';
+import type { Commit, MatrixRepository, ObjectStore, RefStore } from './types';
 import { walkCommits, collectEventIds } from './walkCommits';
 import { diffBranches } from './diff';
 import { mergeBranches } from './merge';

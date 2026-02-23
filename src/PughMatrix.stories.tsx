@@ -12,7 +12,7 @@ import { DEFAULT_SCALE, SCALE_NEG2_POS2, LABELS_COST_1_10, LABELS_COST_NEG2_POS2
 
 const NUMERIC_1_10: ScaleType = DEFAULT_SCALE;
 const NUMERIC_1_10_BARE: ScaleType = { kind: 'numeric', min: 1, max: 10, step: 1 };
-const NUMERIC_NEG2_POS2: ScaleType = SCALE_NEG2_POS2;
+const _NUMERIC_NEG2_POS2: ScaleType = SCALE_NEG2_POS2;
 const NUMERIC_NEG2_POS2_BARE: ScaleType = { kind: 'numeric', min: -2, max: 2, step: 1 };
 const NUMERIC_1_10_COST: ScaleType = { kind: 'numeric', min: 1, max: 10, step: 1, labels: LABELS_COST_1_10.labels };
 const NUMERIC_NEG2_POS2_COST: ScaleType = { kind: 'numeric', min: -2, max: 2, step: 1, labels: LABELS_COST_NEG2_POS2.labels };
@@ -271,7 +271,7 @@ export const DrawerOpen: Story = {
   },
   play: async ({ canvasElement }) => {
     // Click the first scored cell to open the drawer in read-only mode
-    const canvas = within(canvasElement);
+    const _canvas = within(canvasElement);
     const cells = canvasElement.querySelectorAll('.pugh-rating-cell-clickable');
     if (cells[0]) {
       await userEvent.click(cells[0]);

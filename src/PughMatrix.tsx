@@ -99,7 +99,7 @@ function cellFillStyle(
   return {};
 }
 
-function formatDate(timestamp: number): string {
+function _formatDate(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -144,11 +144,11 @@ export default function PughMatrix({
   const editLabel = usePughStore((s) => s.editLabel);
   const editComment = usePughStore((s) => s.editComment);
   const setWeight = usePughStore((s) => s.setWeight);
-  const startEditing = usePughStore((s) => s.startEditing);
+  const _startEditing = usePughStore((s) => s.startEditing);
   const cancelEditing = usePughStore((s) => s.cancelEditing);
   const setEditScore = usePughStore((s) => s.setEditScore);
-  const setEditLabel = usePughStore((s) => s.setEditLabel);
-  const setEditComment = usePughStore((s) => s.setEditComment);
+  const _setEditLabel = usePughStore((s) => s.setEditLabel);
+  const _setEditComment = usePughStore((s) => s.setEditComment);
   const addRating = usePughStore((s) => s.addRating);
   const toggleTotals = usePughStore((s) => s.toggleTotals);
   const toggleWeights = usePughStore((s) => s.toggleWeights);
@@ -175,7 +175,7 @@ export default function PughMatrix({
   const setEditHeaderScaleMax = usePughStore((s) => s.setEditHeaderScaleMax);
   const setEditHeaderScaleStep = usePughStore((s) => s.setEditHeaderScaleStep);
   const setEditHeaderLabelSetId = usePughStore((s) => s.setEditHeaderLabelSetId);
-  const setCriterionScale = usePughStore((s) => s.setCriterionScale);
+  const _setCriterionScale = usePughStore((s) => s.setCriterionScale);
   const customLabelDrawerOpen = usePughStore((s) => s.customLabelDrawerOpen);
   const editCustomLabels = usePughStore((s) => s.editCustomLabels);
   const setCustomLabelDrawerOpen = usePughStore((s) => s.setCustomLabelDrawerOpen);
@@ -183,9 +183,9 @@ export default function PughMatrix({
   const applyCustomLabels = usePughStore((s) => s.applyCustomLabels);
   const editHeaderDescription = usePughStore((s) => s.editHeaderDescription);
   const setEditHeaderDescription = usePughStore((s) => s.setEditHeaderDescription);
-  const drawerCell = usePughStore((s) => s.drawerCell);
+  const _drawerCell = usePughStore((s) => s.drawerCell);
   const openDrawer = usePughStore((s) => s.openDrawer);
-  const closeDrawer = usePughStore((s) => s.closeDrawer);
+  const _closeDrawer = usePughStore((s) => s.closeDrawer);
   const saveAndNavigate = usePughStore((s) => s.saveAndNavigate);
   const startEditingWithPreFill = usePughStore((s) => s.startEditingWithPreFill);
 
