@@ -174,7 +174,12 @@ function MatrixClient() {
   }
 
   const store = useMemo(
-    () => createPughStore({ criteria, options, ratings, weights }),
+    () => {
+      const s = createPughStore({ criteria, options, ratings, weights });
+      s.getState().setShowLabels(true);
+      s.getState().toggleTotals();
+      return s;
+    },
     [],
   );
 

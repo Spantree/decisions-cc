@@ -33,4 +33,5 @@
    Override for the Pugh Matrix container. See ADR-0015. */
 .pugh-container .rt-TableRootTable {
   display: table;
+  border-collapse: collapse;
 }
