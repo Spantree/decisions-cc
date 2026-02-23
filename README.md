@@ -35,22 +35,22 @@ import '@radix-ui/themes/styles.css';
 
 const store = createPughStore({
   criteria: [
-    { id: 'cost', label: 'Cost' },
-    { id: 'speed', label: 'Speed' },
-    { id: 'quality', label: 'Quality' },
+    { id: 'cost', label: 'Cost', user: 'alice' },
+    { id: 'speed', label: 'Speed', user: 'alice' },
+    { id: 'quality', label: 'Quality', user: 'alice' },
   ],
-  tools: [
-    { id: 'option-a', label: 'Option A' },
-    { id: 'option-b', label: 'Option B' },
-    { id: 'option-c', label: 'Option C' },
+  options: [
+    { id: 'option-a', label: 'Option A', user: 'alice' },
+    { id: 'option-b', label: 'Option B', user: 'alice' },
+    { id: 'option-c', label: 'Option C', user: 'alice' },
   ],
-  scores: [
-    { id: '1', toolId: 'option-a', criterionId: 'cost', score: 8, label: 'Low', timestamp: 1707600000000 },
-    { id: '2', toolId: 'option-a', criterionId: 'speed', score: 6, label: 'Medium', timestamp: 1707600000000 },
-    { id: '3', toolId: 'option-a', criterionId: 'quality', score: 9, label: 'Excellent', timestamp: 1707600000000 },
-    { id: '4', toolId: 'option-b', criterionId: 'cost', score: 5, label: 'Medium', timestamp: 1707600000000 },
-    { id: '5', toolId: 'option-b', criterionId: 'speed', score: 9, label: 'Fast', timestamp: 1707600000000 },
-    { id: '6', toolId: 'option-b', criterionId: 'quality', score: 7, label: 'Good', timestamp: 1707600000000 },
+  ratings: [
+    { id: '1', optionId: 'option-a', criterionId: 'cost', value: 8, label: 'Low', timestamp: 1707600000000, user: 'alice' },
+    { id: '2', optionId: 'option-a', criterionId: 'speed', value: 6, label: 'Medium', timestamp: 1707600000000, user: 'alice' },
+    { id: '3', optionId: 'option-a', criterionId: 'quality', value: 9, label: 'Excellent', timestamp: 1707600000000, user: 'alice' },
+    { id: '4', optionId: 'option-b', criterionId: 'cost', value: 5, label: 'Medium', timestamp: 1707600000000, user: 'alice' },
+    { id: '5', optionId: 'option-b', criterionId: 'speed', value: 9, label: 'Fast', timestamp: 1707600000000, user: 'alice' },
+    { id: '6', optionId: 'option-b', criterionId: 'quality', value: 7, label: 'Good', timestamp: 1707600000000, user: 'alice' },
   ],
 });
 
@@ -63,7 +63,7 @@ function App() {
 }
 ```
 
-Cells are always editable — click any cell to add a score, label, or comment directly to the store.
+Cells are always editable — click any cell to add a rating, label, or comment directly to the store.
 
 ## Props
 
@@ -71,52 +71,57 @@ PughMatrix accepts only presentational props. All data lives in the store.
 
 | Prop | Type | Required | Description |
 | --- | --- | --- | --- |
-| `highlight` | `string` | no | Tool ID to visually highlight a column |
+| `highlight` | `string` | no | Option ID to visually highlight a column |
 | `showWinner` | `boolean` | no | Highlight the highest weighted-total column in gold with a crown (default `false`) |
 | `isDark` | `boolean` | no | Enable dark mode styling (default `false`) |
 
-### Criterion & Tool
+### Criterion & Option
 
-Criteria and tools are objects with a stable `id` and a display `label`. Scores reference items by ID, so renaming a label never breaks existing score data.
+Criteria and options are objects with a stable `id`, a display `label`, and a `user` who created them. Ratings reference items by ID, so renaming a label never breaks existing rating data.
 
 ```ts
 interface Criterion {
-  id: string;    // stable identifier used in scores and weights
+  id: string;    // stable identifier used in ratings and weights
   label: string; // display text (can be renamed freely)
+  user: string;  // who created this criterion
+  scale?: ScaleType;  // optional; falls back to matrix default
 }
 
-interface Tool {
-  id: string;    // stable identifier used in scores and highlight
+interface Option {
+  id: string;    // stable identifier used in ratings and highlight
   label: string; // display text (can be renamed freely)
+  user: string;  // who created this option
 }
 ```
 
-### ScoreEntry
+### RatingEntry
 
 ```ts
-interface ScoreEntry {
+interface RatingEntry {
   id: string;           // unique identifier
-  toolId: string;       // tool ID (column)
+  optionId: string;     // option ID (column)
   criterionId: string;  // criterion ID (row)
-  score?: number;       // 1–10 (optional — omit for comment-only entries)
-  label?: string;       // descriptive text shown below the score (required when score is provided)
+  value?: number;       // numeric score (optional — omit for comment-only entries)
+  label?: string;       // descriptive text shown below the score
   comment?: string;     // optional comment
+  parentCommentId?: string; // for threaded replies
   timestamp: number;    // epoch ms — used for ordering (latest wins)
+  user: string;         // who submitted this rating
 }
 ```
 
-Multiple entries per (toolId, criterionId) pair are allowed — this is how score history works. The component displays the most recent entry that has a `score` and shows all entries (including comment-only ones) in a hover tooltip sorted newest-first. Comment-only entries do not overwrite the displayed score.
+Multiple entries per (optionId, criterionId) pair are allowed — this is how rating history works. The component displays the most recent entry that has a `value` and shows all entries (including comment-only ones) in a hover tooltip sorted newest-first. Comment-only entries do not overwrite the displayed rating.
 
-### Score history
+### Rating history
 
 Add multiple entries for the same cell to track revisions over time:
 
 ```ts
-const scores = [
-  // Original score
-  { id: 'a1', toolId: 'react', criterionId: 'cost', score: 9, label: 'Free', timestamp: 1707600000000 },
-  // Revised score — this one displays because it has a later timestamp
-  { id: 'a2', toolId: 'react', criterionId: 'cost', score: 7, label: 'Revised', comment: 'Hidden infra costs', timestamp: 1707686400000 },
+const ratings = [
+  // Original rating
+  { id: 'a1', optionId: 'react', criterionId: 'cost', value: 9, label: 'Free', timestamp: 1707600000000, user: 'alice' },
+  // Revised rating — this one displays because it has a later timestamp
+  { id: 'a2', optionId: 'react', criterionId: 'cost', value: 7, label: 'Revised', comment: 'Hidden infra costs', timestamp: 1707686400000, user: 'bob' },
 ];
 ```
 
@@ -124,23 +129,23 @@ The cell shows `7 / Revised`. Hovering reveals both entries with dates and comme
 
 ### Comment-only entries (dialog)
 
-Add comment-only entries to have a discussion on a cell without changing its score:
+Add comment-only entries to have a discussion on a cell without changing its rating:
 
 ```ts
-const scores = [
-  // Original score
-  { id: 'a1', toolId: 'react', criterionId: 'cost', score: 9, label: 'Free', timestamp: 1707600000000 },
-  // Comment-only follow-up — score remains 9 / Free
-  { id: 'a2', toolId: 'react', criterionId: 'cost', comment: 'But what about hosting?', timestamp: 1707686400000 },
-  { id: 'a3', toolId: 'react', criterionId: 'cost', comment: 'Vercel free tier covers it', timestamp: 1707772800000 },
+const ratings = [
+  // Original rating
+  { id: 'a1', optionId: 'react', criterionId: 'cost', value: 9, label: 'Free', timestamp: 1707600000000, user: 'alice' },
+  // Comment-only follow-up — rating remains 9 / Free
+  { id: 'a2', optionId: 'react', criterionId: 'cost', comment: 'But what about hosting?', timestamp: 1707686400000, user: 'bob' },
+  { id: 'a3', optionId: 'react', criterionId: 'cost', comment: 'Vercel free tier covers it', timestamp: 1707772800000, user: 'alice' },
 ];
 ```
 
-The cell still displays `9 / Free` with its original color. Hovering reveals the full thread of scores and comments. In the edit form, score and label fields are marked as optional — submitting with only a comment creates a comment-only entry.
+The cell still displays `9 / Free` with its original color. Hovering reveals the full thread of ratings and comments. In the edit form, value and label fields are marked as optional — submitting with only a comment creates a comment-only entry.
 
 ### Validation
 
-Each score entry's `toolId` and `criterionId` must match an `id` in the `tools` and `criteria` arrays. The component throws an error if any entry references an unrecognized tool or criterion, listing the allowed values in the error message.
+Each rating entry's `optionId` and `criterionId` must match an `id` in the `options` and `criteria` arrays. The component throws an error if any entry references an unrecognized option or criterion, listing the allowed values in the error message.
 
 ## Store API
 
@@ -151,16 +156,16 @@ import { createPughStore, PughStoreProvider, PughMatrix } from 'decisions-cc';
 
 const store = createPughStore({
   criteria: [
-    { id: 'cost', label: 'Cost' },
-    { id: 'speed', label: 'Speed' },
-    { id: 'quality', label: 'Quality' },
+    { id: 'cost', label: 'Cost', user: 'alice' },
+    { id: 'speed', label: 'Speed', user: 'alice' },
+    { id: 'quality', label: 'Quality', user: 'alice' },
   ],
-  tools: [
-    { id: 'option-a', label: 'Option A' },
-    { id: 'option-b', label: 'Option B' },
+  options: [
+    { id: 'option-a', label: 'Option A', user: 'alice' },
+    { id: 'option-b', label: 'Option B', user: 'alice' },
   ],
-  scores: [
-    { id: '1', toolId: 'option-a', criterionId: 'cost', score: 8, label: 'Low', timestamp: Date.now() },
+  ratings: [
+    { id: '1', optionId: 'option-a', criterionId: 'cost', value: 8, label: 'Low', timestamp: Date.now(), user: 'alice' },
   ],
 });
 
@@ -173,31 +178,30 @@ function App() {
 }
 ```
 
-### Renaming tools and criteria
+### Renaming options and criteria
 
-Labels can be renamed without breaking score references, since scores use stable IDs:
+Labels can be renamed without breaking rating references, since ratings use stable IDs:
 
 ```ts
-store.getState().renameTool('option-a', 'Widget A');
+store.getState().renameOption('option-a', 'Widget A');
 store.getState().renameCriterion('cost', 'Total Cost of Ownership');
 ```
 
 ### Persisted store (localStorage)
 
 ```tsx
-import { createPughStore, createLocalStoragePersister, PughStoreProvider, PughMatrix } from 'decisions-cc';
+import { createPughStore, createLocalStorageRepository, PughStoreProvider, PughMatrix } from 'decisions-cc';
 
 const store = createPughStore({
   criteria: [
-    { id: 'cost', label: 'Cost' },
-    { id: 'speed', label: 'Speed' },
+    { id: 'cost', label: 'Cost', user: 'alice' },
+    { id: 'speed', label: 'Speed', user: 'alice' },
   ],
-  tools: [
-    { id: 'a', label: 'A' },
-    { id: 'b', label: 'B' },
+  options: [
+    { id: 'a', label: 'A', user: 'alice' },
+    { id: 'b', label: 'B', user: 'alice' },
   ],
-  persistKey: 'my-matrix',
-  persister: createLocalStoragePersister(),
+  repository: createLocalStorageRepository('my-matrix'),
 });
 
 function App() {
@@ -209,26 +213,7 @@ function App() {
 }
 ```
 
-Data survives page reloads. The built-in localStorage persister also listens for `storage` events, so changes sync across browser tabs.
-
-### Custom persisters
-
-Implement the `Persister` interface to store data anywhere (IndexedDB, Supabase, a REST API, etc.):
-
-```ts
-import type { Persister } from 'decisions-cc';
-
-const myPersister: Persister = {
-  load: (key) => fetchFromMyBackend(key),
-  save: (key, value) => postToMyBackend(key, value),
-  remove: (key) => deleteFromMyBackend(key),
-  subscribe: (key, cb) => {
-    // Optional: real-time sync
-    const unsub = myRealtimeClient.on(key, (val) => cb(val));
-    return unsub;
-  },
-};
-```
+Data survives page reloads. The built-in localStorage repository also listens for `storage` events, so changes sync across browser tabs.
 
 ### Reading/writing store state from outside React
 
@@ -236,33 +221,33 @@ The store returned by `createPughStore` is a vanilla Zustand store. You can read
 
 ```ts
 const store = createPughStore({
-  criteria: [{ id: 'cost', label: 'Cost' }],
-  tools: [{ id: 'a', label: 'A' }],
+  criteria: [{ id: 'cost', label: 'Cost', user: 'alice' }],
+  options: [{ id: 'a', label: 'A', user: 'alice' }],
 });
 
 // Read
-console.log(store.getState().scores);
+console.log(store.getState().ratings);
 
 // Write
-store.getState().addScore({
-  id: '1', toolId: 'a', criterionId: 'cost', score: 8, label: 'Low', timestamp: Date.now(),
+store.getState().addRating({
+  id: '1', optionId: 'a', criterionId: 'cost', value: 8, label: 'Low', timestamp: Date.now(), user: 'alice',
 });
 
 // Rename
-store.getState().renameTool('a', 'Option A');
+store.getState().renameOption('a', 'Option A');
 ```
 
 ## Features
 
 - **Interactive weights** — each criterion has an adjustable weight (0–10) that updates totals in real time
 - **Color-coded cells** — scores map to a red-to-green HSL gradient, tuned for both light and dark backgrounds
-- **Column highlighting** — pass `highlight="option-b"` (tool ID) to call out a specific column with a primary-color border
+- **Column highlighting** — pass `highlight="option-b"` (option ID) to call out a specific column with a primary-color border
 - **Collapsible totals row** — weighted totals are hidden by default; toggle with the button below the table
 - **Dark mode** — pass `isDark={true}` or detect it from your app's theme system
-- **Score history** — multiple entries per cell; hover to see all revisions in a tooltip (latest scored entry wins)
-- **Comment-only entries** — add comments without changing a cell's score, enabling threaded discussion on any cell
-- **Inline editing** — click any cell to add a new score + label, a comment, or both
-- **Rename support** — rename tool/criterion labels without breaking score references (`renameTool`, `renameCriterion`)
+- **Rating history** — multiple entries per cell; hover to see all revisions in a tooltip (latest rated entry wins)
+- **Comment-only entries** — add comments without changing a cell's rating, enabling threaded discussion on any cell
+- **Inline editing** — click any cell to add a new rating + label, a comment, or both
+- **Rename support** — rename option/criterion labels without breaking rating references (`renameOption`, `renameCriterion`)
 
 ## Dark mode
 
@@ -334,24 +319,24 @@ import {
   PughMatrix,
   createPughStore,
   PughStoreProvider,
-  createLocalStoragePersister,
+  createLocalStorageRepository,
 } from 'decisions-cc';
 import 'decisions-cc/styles.css';
 import '@radix-ui/themes/styles.css';
 import BrowserOnly from '@docusaurus/BrowserOnly';
 import { useColorMode } from '@docusaurus/theme-common';
-import type { Criterion, Tool, ScoreEntry } from 'decisions-cc';
+import type { Criterion, Option, RatingEntry } from 'decisions-cc';
 
 interface PughMatrixWidgetProps {
   /** Row definitions — the evaluation criteria. */
   criteria: Criterion[];
   /** Column definitions — the options being compared. */
-  tools: Tool[];
-  /** Initial scores to seed the matrix with. */
-  scores?: ScoreEntry[];
-  /** localStorage key for persistence. Omit for in-memory only. */
-  persistKey?: string;
-  /** Tool ID to visually highlight a column. */
+  options: Option[];
+  /** Initial ratings to seed the matrix with. */
+  ratings?: RatingEntry[];
+  /** localStorage key prefix for persistence. Omit for in-memory only. */
+  persistPrefix?: string;
+  /** Option ID to visually highlight a column. */
   highlight?: string;
   /** Show the winner crown. */
   showWinner?: boolean;
@@ -359,29 +344,28 @@ interface PughMatrixWidgetProps {
 
 function PughMatrixWidgetInner({
   criteria,
-  tools,
-  scores = [],
-  persistKey,
+  options,
+  ratings = [],
+  persistPrefix,
   highlight,
   showWinner,
 }: PughMatrixWidgetProps) {
   const { colorMode } = useColorMode();
 
-  // Create the store once. If persistKey is provided, localStorage
+  // Create the store once. If persistPrefix is provided, localStorage
   // persistence is enabled and the matrix survives page reloads.
   const store = useMemo(
     () =>
       createPughStore({
         criteria,
-        tools,
-        scores,
-        ...(persistKey && {
-          persistKey,
-          persister: createLocalStoragePersister(),
+        options,
+        ratings,
+        ...(persistPrefix && {
+          repository: createLocalStorageRepository(persistPrefix),
         }),
       }),
     // Intentionally empty — the store is created once per mount.
-    // Changing criteria/tools/scores after mount requires remounting
+    // Changing criteria/options/ratings after mount requires remounting
     // (e.g. with a React key).
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
@@ -427,29 +411,29 @@ title: Framework Comparison
 ---
 
 export const criteria = [
-  { id: 'cost', label: 'Cost' },
-  { id: 'performance', label: 'Performance' },
-  { id: 'ease-of-use', label: 'Ease of Use' },
+  { id: 'cost', label: 'Cost', user: 'alice' },
+  { id: 'performance', label: 'Performance', user: 'alice' },
+  { id: 'ease-of-use', label: 'Ease of Use', user: 'alice' },
 ];
-export const tools = [
-  { id: 'react', label: 'React' },
-  { id: 'vue', label: 'Vue' },
-  { id: 'svelte', label: 'Svelte' },
+export const options = [
+  { id: 'react', label: 'React', user: 'alice' },
+  { id: 'vue', label: 'Vue', user: 'alice' },
+  { id: 'svelte', label: 'Svelte', user: 'alice' },
 ];
-export const scores = [
-  { id: '1', toolId: 'react', criterionId: 'cost', score: 9, label: 'Free', timestamp: 1707600000000 },
-  { id: '2', toolId: 'react', criterionId: 'performance', score: 7, label: 'Good', timestamp: 1707600000000 },
-  { id: '3', toolId: 'vue', criterionId: 'cost', score: 9, label: 'Free', timestamp: 1707600000000 },
-  { id: '4', toolId: 'vue', criterionId: 'performance', score: 8, label: 'Great', timestamp: 1707600000000 },
-  { id: '5', toolId: 'svelte', criterionId: 'cost', score: 9, label: 'Free', timestamp: 1707600000000 },
-  { id: '6', toolId: 'svelte', criterionId: 'performance', score: 10, label: 'Fastest', timestamp: 1707600000000 },
+export const ratings = [
+  { id: '1', optionId: 'react', criterionId: 'cost', value: 9, label: 'Free', timestamp: 1707600000000, user: 'alice' },
+  { id: '2', optionId: 'react', criterionId: 'performance', value: 7, label: 'Good', timestamp: 1707600000000, user: 'alice' },
+  { id: '3', optionId: 'vue', criterionId: 'cost', value: 9, label: 'Free', timestamp: 1707600000000, user: 'alice' },
+  { id: '4', optionId: 'vue', criterionId: 'performance', value: 8, label: 'Great', timestamp: 1707600000000, user: 'alice' },
+  { id: '5', optionId: 'svelte', criterionId: 'cost', value: 9, label: 'Free', timestamp: 1707600000000, user: 'alice' },
+  { id: '6', optionId: 'svelte', criterionId: 'performance', value: 10, label: 'Fastest', timestamp: 1707600000000, user: 'alice' },
 ];
 
 <PughMatrixWidget
   criteria={criteria}
-  tools={tools}
-  scores={scores}
-  persistKey="framework-comparison"
+  options={options}
+  ratings={ratings}
+  persistPrefix="framework-comparison"
   highlight="vue"
   showWinner
 />
@@ -459,10 +443,10 @@ export const scores = [
 
 Here's what's happening under the hood:
 
-1. **`createPughStore()`** creates a vanilla Zustand store instance containing all matrix state (criteria, tools, scores, weights, UI state).
+1. **`createPughStore()`** creates a vanilla Zustand store instance containing all matrix state (criteria, options, ratings, weights, UI state).
 2. **`PughStoreProvider`** injects the store into React context so any `<PughMatrix>` below it can read from it.
 3. **`PughMatrix`** calls `usePughStore(selector)` internally to subscribe to slices of state. It never accepts data as props — it always reads from the store.
-4. **Persistence** is opt-in: pass `persistKey` + a `persister` to `createPughStore` and the store auto-saves/loads domain state (scores, weights, criteria, tools) while ignoring ephemeral UI state (which cell is being edited, etc.).
+4. **Persistence** is opt-in: pass a `repository` (e.g. `createLocalStorageRepository(prefix)`) to `createPughStore` and the store auto-saves/loads domain state (ratings, weights, criteria, options) while ignoring ephemeral UI state (which cell is being edited, etc.).
 5. **Multiple matrices** on the same page each get their own store instance, so they're fully independent.
 
 ### 6. Accessing the store from outside the matrix
@@ -475,12 +459,12 @@ import { useMemo } from 'react';
 import { createPughStore, PughStoreProvider, PughMatrix, usePughStore } from 'decisions-cc';
 
 function ExportButton() {
-  const scores = usePughStore((s) => s.scores);
-  return <button onClick={() => console.log(JSON.stringify(scores))}>Export</button>;
+  const ratings = usePughStore((s) => s.ratings);
+  return <button onClick={() => console.log(JSON.stringify(ratings))}>Export</button>;
 }
 
-export default function MatrixPage({ criteria, tools, scores }) {
-  const store = useMemo(() => createPughStore({ criteria, tools, scores }), []);
+export default function MatrixPage({ criteria, options, ratings }) {
+  const store = useMemo(() => createPughStore({ criteria, options, ratings }), []);
   return (
     <PughStoreProvider store={store}>
       <PughMatrix />
@@ -508,7 +492,7 @@ However, Infima is tightly coupled to Docusaurus conventions and brings a full C
 
 ## Highlight example
 
-Call out a specific column by tool ID:
+Call out a specific column by option ID:
 
 ```tsx
 <PughStoreProvider store={store}>
@@ -529,38 +513,36 @@ npm run build   # outputs dist/ with CJS, ESM, types, and CSS
 
 ### Store-only component
 
-PughMatrix always reads data from a Zustand store via `PughStoreProvider`. There is no "controlled mode" where you pass `criteria`, `tools`, or `scores` as props. This keeps the component simple and avoids duplicating state management logic between a controlled and uncontrolled path.
+PughMatrix always reads data from a Zustand store via `PughStoreProvider`. There is no "controlled mode" where you pass `criteria`, `options`, or `ratings` as props. This keeps the component simple and avoids duplicating state management logic between a controlled and uncontrolled path.
 
 To use PughMatrix:
-1. Call `createPughStore({ criteria, tools, scores })` to create a store
+1. Call `createPughStore({ criteria, options, ratings })` to create a store
 2. Wrap `<PughMatrix>` in `<PughStoreProvider store={store}>`
 3. The component reads everything from the store
 
 ### ID-based references
 
-Criteria and tools are `{ id, label }` objects. Score entries reference them by `toolId` and `criterionId` (stable IDs), not by display label. This means you can rename a criterion or tool label at any time without breaking existing score data. The store provides `renameTool(id, newLabel)` and `renameCriterion(id, newLabel)` actions for this purpose.
+Criteria and options are `{ id, label, user }` objects. Rating entries reference them by `optionId` and `criterionId` (stable IDs), not by display label. This means you can rename a criterion or option label at any time without breaking existing rating data. The store provides `renameOption(id, newLabel)` and `renameCriterion(id, newLabel)` actions for this purpose.
 
 ### Zustand over alternatives
 
 Zustand was chosen because it's tiny (~1 KB), has no boilerplate, works with vanilla JS (not just React), and its `persist` middleware provides exactly the hook points we need. The store is created with `createStore` (vanilla) rather than the React-only `create`, so it can be used outside React (tests, SSR, CLI tools).
 
-### Persister interface (adapter pattern)
+### Repository layer (adapter pattern)
 
-Instead of coupling to `localStorage` or any specific backend, the store accepts a `Persister` — a four-method interface (`load`, `save`, `remove`, `subscribe?`). This enables an **open-core model**:
+Instead of coupling to `localStorage` or any specific backend, the store accepts a `repository` — a `MatrixRepository` implementing a git-like object/ref store. This enables an **open-core model**:
 
-- The core library ships with `createLocalStoragePersister()` (MIT, zero backend assumptions).
-- Additional adapters (`persist-indexeddb`, `persist-supabase`, etc.) can be built and shipped separately by anyone implementing the `Persister` interface.
-
-The `subscribe` method is optional. When present, the store calls `persister.subscribe(key, cb)` and triggers `rehydrate()` on changes — enabling cross-tab sync (localStorage `storage` events) or real-time sync (WebSocket/Supabase realtime).
+- The core library ships with `createLocalStorageRepository(prefix)` (MIT, zero backend assumptions).
+- Additional adapters can be built and shipped separately by anyone implementing the `MatrixRepository` interface.
 
 ### Domain vs. UI state partitioning
 
 The store separates state into two categories:
 
-- **Domain state** (`PughDomainState`): `criteria`, `tools`, `scores`, `weights` — this is what gets persisted.
+- **Domain state** (`PughDomainState`): `criteria`, `options`, `ratings`, `weights` — this is what gets persisted.
 - **UI state** (`PughUIState`): `showTotals`, `editingCell`, `editScore`, `editLabel`, `editComment` — ephemeral, never persisted.
 
-Zustand's `partialize` option in the `persist` middleware handles this cleanly: only domain state is serialized. This means opening a persisted matrix doesn't restore stale editing state.
+Only domain state is serialized. This means opening a persisted matrix doesn't restore stale editing state.
 
 ### Factory function, not a singleton
 
