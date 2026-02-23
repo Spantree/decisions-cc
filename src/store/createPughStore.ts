@@ -69,6 +69,12 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
     repository = createMemoryRepository(),
   } = options;
 
+  // When no external repository is provided, seed data is projected
+  // synchronously and we can render immediately without waiting for init().
+  // External repositories (e.g. localStorage) may contain persisted state
+  // that differs from seed data, so they must hydrate asynchronously.
+  const hasExternalRepository = options.repository != null;
+
   const initialEvents = seedEventsFromOptions({ criteria, options: opts, ratings, weights });
   const initialDomain = projectEvents(initialEvents);
 
@@ -112,7 +118,7 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
       activeBranch: 'main',
       branchNames: ['main'],
       commitLog: [],
-      isLoading: true,
+      isLoading: hasExternalRepository,
       comparingBranch: null,
       branchDiff: null,
 
@@ -185,6 +191,9 @@ export function createPughStore(options: CreatePughStoreOptions = {}) {
               set({ events, ...domain, commitLog, branchNames, activeBranch: 'main', isLoading: false }, false, 'init/hydrate');
             }
           } else {
+            // No existing ref — seed the repo. If we already rendered
+            // synchronously (in-memory repo), this just populates the
+            // repository for future mutations without blocking the UI.
             await seedFresh();
           }
         } catch {
