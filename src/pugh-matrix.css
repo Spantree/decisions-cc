@@ -1007,6 +1007,33 @@
 /*  Cell detail drawer (right-side sheet)                              */
 /* ------------------------------------------------------------------ */
 
+/* Radix Themes overlay — ensure it covers viewport even without Theme CSS.
+   The .pugh-drawer-overlay class is added via JS (CellDetailDrawer useEffect)
+   because :has() selectors get stripped by some CSS bundlers (e.g. Docusaurus). */
+.pugh-drawer-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9998 !important;
+  background: rgba(0, 0, 0, 0.4);
+  height: auto !important;
+}
+
+/* Radix scroll/padding wrappers — must also be fixed to contain the drawer */
+.pugh-drawer-overlay .rt-DialogScroll {
+  position: fixed !important;
+  inset: 0 !important;
+  height: auto !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  pointer-events: none;
+}
+
+.pugh-drawer-overlay .rt-DialogScrollPadding {
+  position: static !important;
+  height: auto !important;
+  pointer-events: none;
+}
+
 .pugh-cell-detail-drawer {
   position: fixed !important;
   top: 0 !important;
@@ -1021,6 +1048,12 @@
   transform: none !important;
   animation: pugh-slide-in-right 0.2s ease-out;
   overflow-y: auto;
+  z-index: 9999 !important;
+  pointer-events: auto;
+  background: var(--pugh-bg, #fff);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+  padding: 1.25rem;
+  box-sizing: border-box;
 }
 
 .pugh-drawer-section {
