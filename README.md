@@ -323,6 +323,9 @@ Docusaurus uses `useColorMode` for dark mode detection. Create a wrapper that:
 - Creates (or reuses) a Zustand store
 - Wraps `PughMatrix` in a `PughStoreProvider`
 - Passes the Docusaurus color mode through as `isDark`
+- Wraps everything in `<BrowserOnly>` to prevent SSR hydration mismatches
+
+PughMatrix uses `useEffect` for store initialization, which doesn't run during SSR. Without `<BrowserOnly>`, the server renders empty HTML while the client renders the full matrix — React detects the mismatch and the component disappears.
 
 ```tsx
 // src/components/PughMatrixWidget.tsx
@@ -335,6 +338,7 @@ import {
 } from 'decisions-cc';
 import 'decisions-cc/styles.css';
 import '@radix-ui/themes/styles.css';
+import BrowserOnly from '@docusaurus/BrowserOnly';
 import { useColorMode } from '@docusaurus/theme-common';
 import type { Criterion, Tool, ScoreEntry } from 'decisions-cc';
 
@@ -353,7 +357,7 @@ interface PughMatrixWidgetProps {
   showWinner?: boolean;
 }
 
-export default function PughMatrixWidget({
+function PughMatrixWidgetInner({
   criteria,
   tools,
   scores = [],
@@ -391,6 +395,14 @@ export default function PughMatrixWidget({
         isDark={colorMode === 'dark'}
       />
     </PughStoreProvider>
+  );
+}
+
+export default function PughMatrixWidget(props: PughMatrixWidgetProps) {
+  return (
+    <BrowserOnly fallback={<div>Loading matrix...</div>}>
+      {() => <PughMatrixWidgetInner {...props} />}
+    </BrowserOnly>
   );
 }
 ```
