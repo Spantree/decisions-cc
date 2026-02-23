@@ -450,7 +450,11 @@
   box-shadow: inset 0 0 0 1px rgba(212, 160, 23, 0.2);
 }
 
-.pugh-container tbody tr:nth-last-child(2) .pugh-winner-cell {
+/* Bottom border on whichever row is visually last in the winner column.
+   nth-last-child(2) covers editable mode (add-row is last);
+   last-child covers readOnly mode and the totals row. */
+.pugh-container tbody tr:nth-last-child(2) .pugh-winner-cell,
+.pugh-container tbody tr:last-child .pugh-winner-cell {
   border-bottom: 2.5px solid #d4a017 !important;
 }
 
