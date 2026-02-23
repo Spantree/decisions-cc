@@ -518,7 +518,10 @@ The highlighted column gets a primary-color header and bordered cells.
 ```bash
 npm install
 npm run build   # outputs dist/ with CJS, ESM, types, and CSS
+npm run dev     # starts Storybook (:6006) and Docusaurus (:3000) together
 ```
+
+`npm run dev` launches both dev servers concurrently. Cross-links between the two apps automatically resolve to localhost in development and to production URLs in builds.
 
 ## Architecture & design decisions
 

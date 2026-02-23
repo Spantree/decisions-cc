@@ -33,6 +33,7 @@
     "test:watch": "vitest --project unit",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
+    "dev": "npm run storybook & npm run docs & wait",
     "docs": "npm start --prefix website",
     "docs:build": "npm run build --prefix website",
     "docs:serve": "npm run serve --prefix website"

@@ -1,3 +1,5 @@
+import ZustandComparisonMatrix from '@site/src/components/ZustandComparisonMatrix';
+
 # Use Zustand for State Management
 
 - Status: accepted
@@ -42,3 +44,11 @@ Every `set()` call includes a descriptive action name (e.g., `'event/RatingAssig
 
 - Store-only means consumers cannot drive the component via props (intentional simplification)
 - Zustand is a runtime dependency, though it is small (~1KB)
+
+## Comparison Matrix
+
+The interactive matrix below scores each option against the decision drivers.
+Criteria weighted 2× (Bundle Size, Boilerplate, Scoped Instances) reflect the
+primary concerns for a component library; the rest are weighted 1×.
+
+<ZustandComparisonMatrix />

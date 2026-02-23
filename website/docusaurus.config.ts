@@ -1,6 +1,10 @@
+import path from 'path';
 import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
+
+const isDev = process.env.NODE_ENV === 'development';
+const storybookUrl = isDev ? 'http://localhost:6006/' : 'https://storybook.decisions.cc/';
 
 const config: Config = {
   title: 'decisions-cc',
@@ -19,6 +23,24 @@ const config: Config = {
     defaultLocale: 'en',
     locales: ['en'],
   },
+
+  plugins: [
+    function resolveDecisionsCc() {
+      return {
+        name: 'resolve-decisions-cc',
+        configureWebpack() {
+          return {
+            resolve: {
+              alias: {
+                'decisions-cc/styles.css': path.resolve(__dirname, '../dist/index.css'),
+                'decisions-cc': path.resolve(__dirname, '../dist/index.mjs'),
+              },
+            },
+          };
+        },
+      };
+    },
+  ],
 
   presets: [
     [
@@ -53,7 +75,7 @@ const config: Config = {
           label: 'Docs',
         },
         {
-          href: 'https://storybook.decisions.cc/',
+          href: storybookUrl,
           label: 'Storybook',
           position: 'left',
         },
@@ -85,7 +107,7 @@ const config: Config = {
           items: [
             {
               label: 'Storybook',
-              href: 'https://storybook.decisions.cc/',
+              href: storybookUrl,
             },
             {
               label: 'GitHub',
