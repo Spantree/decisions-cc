@@ -1,3 +1,4 @@
+import path from 'path';
 import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
@@ -19,6 +20,24 @@ const config: Config = {
     defaultLocale: 'en',
     locales: ['en'],
   },
+
+  plugins: [
+    function resolveDecisionsCc() {
+      return {
+        name: 'resolve-decisions-cc',
+        configureWebpack() {
+          return {
+            resolve: {
+              alias: {
+                'decisions-cc/styles.css': path.resolve(__dirname, '../dist/index.css'),
+                'decisions-cc': path.resolve(__dirname, '../dist/index.mjs'),
+              },
+            },
+          };
+        },
+      };
+    },
+  ],
 
   presets: [
     [

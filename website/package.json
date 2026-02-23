@@ -5,7 +5,8 @@
   "scripts": {
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
-    "build": "docusaurus build",
+    "build:lib": "cd .. && npm install --include=dev && npm run build",
+    "build": "test -f ../dist/index.mjs || npm run build:lib && docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
@@ -21,7 +22,6 @@
     "clsx": "^2.0.0",
     "prism-react-renderer": "^2.3.0",
     "@radix-ui/themes": "^3.3.0",
-    "decisions-cc": "file:..",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "zustand": "^5.0.11"
