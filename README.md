@@ -302,15 +302,25 @@ npm install Spantree/decisions-cc @radix-ui/themes
 
 (`zustand` is included as a transitive dependency of `decisions-cc`.)
 
-### 2. Create a wrapper component
+### 2. Fix the Infima table CSS conflict
+
+Docusaurus bundles [Infima](https://infima.dev/) which sets `table { display: block }` globally. This collapses Radix UI's `<table>` element inside the Pugh matrix to 0px height (combined with Radix's `overflow: hidden`). Add this override to your `src/css/custom.css`:
+
+```css
+/* Restore table layout inside PughMatrix — Infima sets display:block globally */
+.pugh-container .rt-TableRootTable {
+  display: table;
+}
+```
+
+Without this fix, the matrix appears blank even though the component mounts correctly.
+
+### 3. Create a wrapper component
 
 Docusaurus uses `useColorMode` for dark mode detection. Create a wrapper that:
 - Creates (or reuses) a Zustand store
 - Wraps `PughMatrix` in a `PughStoreProvider`
 - Passes the Docusaurus color mode through as `isDark`
-- Wraps everything in `<BrowserOnly>` to prevent SSR hydration mismatches
-
-PughMatrix uses `useEffect` for store initialization, which doesn't run during SSR. Without `<BrowserOnly>`, the server renders empty HTML while the client renders the full matrix — React detects the mismatch and the component disappears.
 
 ```tsx
 // src/components/PughMatrixWidget.tsx
@@ -323,7 +333,6 @@ import {
 } from 'decisions-cc';
 import 'decisions-cc/styles.css';
 import '@radix-ui/themes/styles.css';
-import BrowserOnly from '@docusaurus/BrowserOnly';
 import { useColorMode } from '@docusaurus/theme-common';
 import type { Criterion, Option, RatingEntry } from 'decisions-cc';
 
@@ -342,7 +351,7 @@ interface PughMatrixWidgetProps {
   showWinner?: boolean;
 }
 
-function PughMatrixWidgetInner({
+export default function PughMatrixWidget({
   criteria,
   options,
   ratings = [],
@@ -381,17 +390,9 @@ function PughMatrixWidgetInner({
     </PughStoreProvider>
   );
 }
-
-export default function PughMatrixWidget(props: PughMatrixWidgetProps) {
-  return (
-    <BrowserOnly fallback={<div>Loading matrix...</div>}>
-      {() => <PughMatrixWidgetInner {...props} />}
-    </BrowserOnly>
-  );
-}
 ```
 
-### 3. Register the component for MDX
+### 4. Register the component for MDX
 
 Make the component available in `.mdx` files by adding it to `src/theme/MDXComponents.tsx`:
 
@@ -403,7 +404,7 @@ import PughMatrixWidget from '@site/src/components/PughMatrixWidget';
 export default { ...MDXComponents, PughMatrixWidget };
 ```
 
-### 4. Use it in an MDX page
+### 5. Use it in an MDX page
 
 ```mdx
 ---
@@ -439,7 +440,7 @@ export const ratings = [
 />
 ```
 
-### 5. How the state wiring works
+### 6. How the state wiring works
 
 Here's what's happening under the hood:
 
@@ -449,7 +450,7 @@ Here's what's happening under the hood:
 4. **Persistence** is opt-in: pass a `repository` (e.g. `createLocalStorageRepository(prefix)`) to `createPughStore` and the store auto-saves/loads domain state (ratings, weights, criteria, options) while ignoring ephemeral UI state (which cell is being edited, etc.).
 5. **Multiple matrices** on the same page each get their own store instance, so they're fully independent.
 
-### 6. Accessing the store from outside the matrix
+### 7. Accessing the store from outside the matrix
 
 If you need to read or modify matrix state from sibling components (e.g. an "Export to CSV" button), lift the store to a shared scope:
 
