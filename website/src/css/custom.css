@@ -35,3 +35,17 @@
   display: table;
   border-collapse: collapse;
 }
+
+/* Allow table to scroll horizontally on narrow viewports. */
+.pugh-container .rt-TableRoot {
+  overflow-x: auto;
+}
+
+/* Radix Themes sets min-height: 100vh/100dvh and position/z-index on
+   root theme elements, which creates massive whitespace and stacking
+   issues when PughMatrix is embedded in a doc page. */
+.pugh-container .radix-themes[data-is-root-theme="true"] {
+  min-height: auto;
+  position: static;
+  z-index: auto;
+}

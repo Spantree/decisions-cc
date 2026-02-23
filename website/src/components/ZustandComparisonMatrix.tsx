@@ -210,16 +210,14 @@ function MatrixClient() {
   );
 
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <PughStoreProvider store={store}>
-        <PughMatrix
-          showWinner
-          isDark={colorMode === 'dark'}
-          readOnly
-        />
-        <ViewToggle />
-      </PughStoreProvider>
-    </div>
+    <PughStoreProvider store={store}>
+      <PughMatrix
+        showWinner
+        isDark={colorMode === 'dark'}
+        readOnly
+      />
+      <ViewToggle />
+    </PughStoreProvider>
   );
 }
 
