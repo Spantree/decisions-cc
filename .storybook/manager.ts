@@ -1,12 +1,16 @@
 import { addons } from 'storybook/manager-api';
 import { create } from 'storybook/theming/create';
 
+const isLocal = typeof globalThis !== 'undefined'
+  && typeof globalThis.location !== 'undefined'
+  && globalThis.location.hostname === 'localhost';
+
 const theme = create({
   base: 'light',
 
   // Brand
   brandTitle: 'Fluent Workshop — Decision Matrix',
-  brandUrl: 'https://github.com/Spantree/decisions-cc',
+  brandUrl: isLocal ? 'http://localhost:3000' : 'https://docs.decisions.cc',
   brandImage: '/logo.svg',
   brandTarget: '_blank',
 

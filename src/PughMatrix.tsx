@@ -909,40 +909,36 @@ export default function PughMatrix({
           </Table.Body>
         </Table.Root>
         )}
-        {!effectiveReadOnly && (
+        <button
+          className="pugh-toggle-button"
+          onClick={toggleView}
+          type="button"
+        >
+          {view === 'table' ? 'Show Chart' : 'Show Table'}
+        </button>
+        {view === 'table' && (
           <>
             <button
               className="pugh-toggle-button"
-              onClick={toggleView}
+              onClick={toggleWeights}
               type="button"
             >
-              {view === 'table' ? 'Show Chart' : 'Show Table'}
+              {showWeights ? 'Hide Weights' : 'Show Weights'}
             </button>
-            {view === 'table' && (
-              <>
-                <button
-                  className="pugh-toggle-button"
-                  onClick={toggleWeights}
-                  type="button"
-                >
-                  {showWeights ? 'Hide Weights' : 'Show Weights'}
-                </button>
-                <button
-                  className="pugh-toggle-button"
-                  onClick={toggleTotals}
-                  type="button"
-                >
-                  {showTotals ? 'Hide Totals' : 'Show Totals'}
-                </button>
-                <button
-                  className="pugh-toggle-button"
-                  onClick={toggleLabels}
-                  type="button"
-                >
-                  {showLabels ? 'Hide Labels' : 'Show Labels'}
-                </button>
-              </>
-            )}
+            <button
+              className="pugh-toggle-button"
+              onClick={toggleTotals}
+              type="button"
+            >
+              {showTotals ? 'Hide Totals' : 'Show Totals'}
+            </button>
+            <button
+              className="pugh-toggle-button"
+              onClick={toggleLabels}
+              type="button"
+            >
+              {showLabels ? 'Hide Labels' : 'Show Labels'}
+            </button>
           </>
         )}
         <Dialog.Root open={customLabelDrawerOpen} onOpenChange={(open) => { if (!open) setCustomLabelDrawerOpen(false); }}>
