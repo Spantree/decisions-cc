@@ -4,17 +4,24 @@ A standalone React component for [Pugh decision matrices](https://en.wikipedia.o
 
 ## Install
 
-Install directly from GitHub (no registry required):
+The package is published to [GitHub Package Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry) under `@spantree/decisions-cc`.
 
-```bash
-npm install Spantree/decisions-cc
+**1. Configure npm to use GPR for the `@spantree` scope.** Add an `.npmrc` to your project root:
+
+```
+@spantree:registry=https://npm.pkg.github.com
 ```
 
-Pin to a specific commit or tag:
+**2. Authenticate.** Create a GitHub [personal access token](https://github.com/settings/tokens) with `read:packages` scope, then log in:
 
 ```bash
-npm install Spantree/decisions-cc#v0.1.0
-npm install Spantree/decisions-cc#abc1234
+npm login --registry=https://npm.pkg.github.com
+```
+
+**3. Install:**
+
+```bash
+npm install @spantree/decisions-cc
 ```
 
 Peer dependencies — bring your own:
@@ -29,8 +36,8 @@ Peer dependencies — bring your own:
 PughMatrix always reads its data from a Zustand store. Create a store with `createPughStore`, pass it to `PughStoreProvider`, and render `PughMatrix` inside the provider:
 
 ```tsx
-import { PughMatrix, createPughStore, PughStoreProvider } from 'decisions-cc';
-import 'decisions-cc/styles.css';
+import { PughMatrix, createPughStore, PughStoreProvider } from '@spantree/decisions-cc';
+import '@spantree/decisions-cc/styles.css';
 import '@radix-ui/themes/styles.css';
 
 const store = createPughStore({
@@ -152,7 +159,7 @@ Each rating entry's `optionId` and `criterionId` must match an `id` in the `opti
 ### Creating a store
 
 ```tsx
-import { createPughStore, PughStoreProvider, PughMatrix } from 'decisions-cc';
+import { createPughStore, PughStoreProvider, PughMatrix } from '@spantree/decisions-cc';
 
 const store = createPughStore({
   criteria: [
@@ -190,7 +197,7 @@ store.getState().renameCriterion('cost', 'Total Cost of Ownership');
 ### Persisted store (localStorage)
 
 ```tsx
-import { createPughStore, createLocalStorageRepository, PughStoreProvider, PughMatrix } from 'decisions-cc';
+import { createPughStore, createLocalStorageRepository, PughStoreProvider, PughMatrix } from '@spantree/decisions-cc';
 
 const store = createPughStore({
   criteria: [
@@ -297,10 +304,10 @@ This section walks through wiring up `decisions-cc` with Zustand state in a Docu
 ### 1. Install dependencies
 
 ```bash
-npm install Spantree/decisions-cc @radix-ui/themes
+npm install @spantree/decisions-cc @radix-ui/themes
 ```
 
-(`zustand` is included as a transitive dependency of `decisions-cc`.)
+(`zustand` is included as a transitive dependency of `@spantree/decisions-cc`.)
 
 ### 2. Fix the Infima table CSS conflict
 
@@ -331,12 +338,12 @@ import {
   createPughStore,
   PughStoreProvider,
   createLocalStorageRepository,
-} from 'decisions-cc';
-import 'decisions-cc/styles.css';
+} from '@spantree/decisions-cc';
+import '@spantree/decisions-cc/styles.css';
 import '@radix-ui/themes/styles.css';
 import BrowserOnly from '@docusaurus/BrowserOnly';
 import { useColorMode } from '@docusaurus/theme-common';
-import type { Criterion, Option, RatingEntry } from 'decisions-cc';
+import type { Criterion, Option, RatingEntry } from '@spantree/decisions-cc';
 
 interface PughMatrixWidgetProps {
   /** Row definitions — the evaluation criteria. */
@@ -467,7 +474,7 @@ If you need to read or modify matrix state from sibling components (e.g. an "Exp
 ```tsx
 // src/components/MatrixPage.tsx
 import { useMemo } from 'react';
-import { createPughStore, PughStoreProvider, PughMatrix, usePughStore } from 'decisions-cc';
+import { createPughStore, PughStoreProvider, PughMatrix, usePughStore } from '@spantree/decisions-cc';
 
 function ExportButton() {
   const ratings = usePughStore((s) => s.ratings);
@@ -512,6 +519,22 @@ Call out a specific column by option ID:
 ```
 
 The highlighted column gets a primary-color header and bordered cells.
+
+## Releasing
+
+Publishing is automated via GitHub Actions. Creating a GitHub Release triggers the workflow that builds and publishes to GPR.
+
+```bash
+# Bump version in package.json, commit, then:
+gh release create v0.2.0 --title "v0.2.0" --notes "Release notes here"
+```
+
+The `publish.yml` workflow will:
+1. Check out the tagged commit
+2. Run `npm ci` and `npm run build`
+3. Publish `@spantree/decisions-cc` to GitHub Package Registry using the built-in `GITHUB_TOKEN`
+
+No additional secrets need to be configured — `GITHUB_TOKEN` is provided automatically by GitHub Actions with `packages: write` permission.
 
 ## Development
 
