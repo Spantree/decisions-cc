@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import BrowserOnly from '@docusaurus/BrowserOnly';
 import { useColorMode } from '@docusaurus/theme-common';
 
-import type { Criterion, Option, RatingEntry, ScaleType } from 'decisions-cc';
+import type { Criterion, Option, RatingEntry, ScaleType } from '@spantree/decisions-cc';
 
 let cssLoaded = false;
 
@@ -165,11 +165,11 @@ function MatrixClient() {
     createPughStore,
     PughStoreProvider,
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  } = require('decisions-cc');
+  } = require('@spantree/decisions-cc');
 
   if (!cssLoaded) {
     require('@radix-ui/themes/styles.css');
-    require('decisions-cc/styles.css');
+    require('@spantree/decisions-cc/styles.css');
     cssLoaded = true;
   }
 

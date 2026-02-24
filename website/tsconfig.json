@@ -4,7 +4,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "decisions-cc": ["../dist/index.d.ts"]
+      "@spantree/decisions-cc": ["./node_modules/@spantree/decisions-cc/dist/index.d.ts"]
     }
   },
   "exclude": [".docusaurus", "build"]

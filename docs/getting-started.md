@@ -10,17 +10,24 @@ A standalone React component for [Pugh decision matrices](https://en.wikipedia.o
 
 ## Install
 
-Install directly from GitHub (no registry required):
+The package is published to [GitHub Package Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry) under `@spantree/decisions-cc`.
 
-```bash
-npm install Spantree/decisions-cc
+**1. Configure npm to use GPR for the `@spantree` scope.** Add an `.npmrc` to your project root:
+
+```
+@spantree:registry=https://npm.pkg.github.com
 ```
 
-Pin to a specific commit or tag:
+**2. Authenticate.** Create a GitHub [personal access token](https://github.com/settings/tokens) with `read:packages` scope, then log in:
 
 ```bash
-npm install Spantree/decisions-cc#v0.1.0
-npm install Spantree/decisions-cc#abc1234
+npm login --registry=https://npm.pkg.github.com
+```
+
+**3. Install:**
+
+```bash
+npm install @spantree/decisions-cc
 ```
 
 Peer dependencies — bring your own:
@@ -35,8 +42,8 @@ Peer dependencies — bring your own:
 PughMatrix always reads its data from a Zustand store. Create a store with `createPughStore`, pass it to `PughStoreProvider`, and render `PughMatrix` inside the provider:
 
 ```tsx
-import { PughMatrix, createPughStore, PughStoreProvider } from 'decisions-cc';
-import 'decisions-cc/styles.css';
+import { PughMatrix, createPughStore, PughStoreProvider } from '@spantree/decisions-cc';
+import '@spantree/decisions-cc/styles.css';
 import '@radix-ui/themes/styles.css';
 
 const store = createPughStore({
@@ -158,7 +165,7 @@ Each rating entry's `optionId` and `criterionId` must match an `id` in the `opti
 ### Creating a store
 
 ```tsx
-import { createPughStore, PughStoreProvider, PughMatrix } from 'decisions-cc';
+import { createPughStore, PughStoreProvider, PughMatrix } from '@spantree/decisions-cc';
 
 const store = createPughStore({
   criteria: [
@@ -196,7 +203,7 @@ store.getState().renameCriterion('cost', 'Total Cost of Ownership');
 ### Persisted store (localStorage)
 
 ```tsx
-import { createPughStore, createLocalStorageRepository, PughStoreProvider, PughMatrix } from 'decisions-cc';
+import { createPughStore, createLocalStorageRepository, PughStoreProvider, PughMatrix } from '@spantree/decisions-cc';
 
 const store = createPughStore({
   criteria: [
@@ -298,15 +305,15 @@ Override the default theme by setting these variables on a parent element:
 
 ## Using with Docusaurus (greenfield guide)
 
-This section walks through wiring up `decisions-cc` with Zustand state in a Docusaurus site from scratch.
+This section walks through wiring up `@spantree/decisions-cc` with Zustand state in a Docusaurus site from scratch.
 
 ### 1. Install dependencies
 
 ```bash
-npm install Spantree/decisions-cc @radix-ui/themes
+npm install @spantree/decisions-cc @radix-ui/themes
 ```
 
-(`zustand` is included as a transitive dependency of `decisions-cc`.)
+(`zustand` is included as a transitive dependency of `@spantree/decisions-cc`.)
 
 ### 2. Fix the Infima table CSS conflict
 
@@ -337,12 +344,12 @@ import {
   createPughStore,
   PughStoreProvider,
   createLocalStorageRepository,
-} from 'decisions-cc';
-import 'decisions-cc/styles.css';
+} from '@spantree/decisions-cc';
+import '@spantree/decisions-cc/styles.css';
 import '@radix-ui/themes/styles.css';
 import BrowserOnly from '@docusaurus/BrowserOnly';
 import { useColorMode } from '@docusaurus/theme-common';
-import type { Criterion, Option, RatingEntry } from 'decisions-cc';
+import type { Criterion, Option, RatingEntry } from '@spantree/decisions-cc';
 
 interface PughMatrixWidgetProps {
   /** Row definitions — the evaluation criteria. */
@@ -473,7 +480,7 @@ If you need to read or modify matrix state from sibling components (e.g. an "Exp
 ```tsx
 // src/components/MatrixPage.tsx
 import { useMemo } from 'react';
-import { createPughStore, PughStoreProvider, PughMatrix, usePughStore } from 'decisions-cc';
+import { createPughStore, PughStoreProvider, PughMatrix, usePughStore } from '@spantree/decisions-cc';
 
 function ExportButton() {
   const ratings = usePughStore((s) => s.ratings);
