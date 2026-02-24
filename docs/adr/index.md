@@ -17,6 +17,7 @@
 * [ADR-0013](0013-table-layout-drawer-and-mobile-read-only.md) - Fixed-Width Columns, Drawer UI, and Mobile Read-Only
 * [ADR-0014](0014-docusaurus-documentation-site.md) - Docusaurus Documentation Site
 * [ADR-0015](0015-drawer-inline-styles-for-css-bundler-resilience.md) - Drawer Inline Styles for CSS Bundler Resilience
+* [ADR-0016](0016-supabase-event-store-backend.md) - Supabase Event Store Backend
 
 <!-- adrlogstop -->
 
