@@ -1,5 +1,5 @@
 {
-  "name": "decisions-cc",
+  "name": "@spantree/decisions-cc",
   "version": "0.1.0",
   "description": "Pugh decision matrix React component for weighted multi-criteria evaluation",
   "main": "dist/index.js",
@@ -41,6 +41,10 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/Spantree/decisions-cc.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
   },
   "keywords": [
     "pugh-matrix",
