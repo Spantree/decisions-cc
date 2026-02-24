@@ -35,7 +35,11 @@
     "typecheck": "tsc --noEmit",
     "docs": "npm start --prefix website",
     "docs:build": "npm run build --prefix website",
-    "docs:serve": "npm run serve --prefix website"
+    "docs:serve": "npm run serve --prefix website",
+    "supabase:start": "npx supabase start",
+    "supabase:stop": "npx supabase stop",
+    "supabase:reset": "npx supabase db reset",
+    "supabase:status": "npx supabase status"
   },
   "repository": {
     "type": "git",
@@ -80,6 +84,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@supabase/supabase-js": "^2.97.0",
     "marked": "^17.0.3",
     "recharts": "^3.7.0",
     "uuidv7": "^1.1.0",
