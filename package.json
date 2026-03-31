@@ -43,8 +43,8 @@
     "url": "https://github.com/Spantree/decisions-cc.git"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com",
-    "access": "restricted"
+    "registry": "https://npm.span.land",
+    "access": "public"
   },
   "keywords": [
     "pugh-matrix",

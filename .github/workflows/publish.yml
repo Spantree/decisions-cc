@@ -1,26 +1,24 @@
-name: Publish to GPR
+name: Publish to Verdaccio
 
 on:
   release:
     types: [published]
 
-permissions:
-  contents: read
-  packages: write
-
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          registry-url: https://npm.pkg.github.com
-          scope: '@spantree'
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-      - run: npm publish
+
+      - uses: oven-sh/setup-bun@v2
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run build
+
+      - name: Publish to Verdaccio
+        run: bun publish --registry https://npm.span.land
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_CONFIG_TOKEN: ${{ secrets.VERDACCIO_AUTH_TOKEN }}
